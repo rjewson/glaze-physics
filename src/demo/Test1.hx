@@ -1,5 +1,6 @@
 package demo;
 
+import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Map;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Ray;
@@ -21,7 +22,6 @@ class Test1
 
     public var player:Body;
     public var ray:Ray;
-    public var wall:Body;
 
     public var map:Map;
 
@@ -59,7 +59,7 @@ class Test1
         input = new DigitalInput();
         input.InputTarget(Browser.document);
 
-        var mapData = new ds.Bytes2D(20,20,32,4,ds.Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnOo+Jfa5lErHIeifylJ+0PFv6PmDW/zqIkBJyMAXA=="));
+        var mapData = new glaze.ds.Bytes2D(20,20,32,4,glaze.ds.Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnOo+Jfa5lErHIeifylJ+0PFv6PmDW/zqIkBJyMAXA=="));
         map = new Map(mapData);
         map.debug = debugGrid;
         debugGridItems = new Array<Int>();
@@ -77,18 +77,20 @@ class Test1
         player.position.setTo(200,200);
         engine.addBody(player);
 
-        wall = new Body(40,100);
-        wall.isStatic = true;
-        wall.position.setTo(400,300);
-        engine.addBody(wall);
-
+        var box = BFProxy.CreateStaticFeature(320,300,40,100);
+        box.contactCallback = cb;
+        engine.broadphase.addProxy(box);
+        
         ray = new Ray();
+    }
+
+    public function cb(a:BFProxy,b:BFProxy,c:Contact) {
+        trace("hit");
     }
 
     public function update(delta:Float) {
 
         debugGridItemsCount = 0;
-        // wall.position.x-=0.1;
         input.Update(0,0);
         ray.hit=false;
         processInput();
@@ -104,11 +106,15 @@ class Test1
         var right = input.PressedDuration(68);  //d
         var up = input.JustPressed(87);     //w
         var down = input.PressedDuration(83);   //s
-        var fire = input.JustPressed(32);
+        var fire = input.Pressed(32);
         var ray = input.Pressed(82);
         if (left>0) inputVelocity.x  -= force;
         if (right>0) inputVelocity.x += force;
-        if (up) inputVelocity.y    -= force*50;
+        if (up) {
+            if (player.onGround) {
+                inputVelocity.y    -= force*50;
+            }
+        }
         if (down>0) inputVelocity.y  += force;
         if (fire) fireBullet();
         if (ray) shootRay();
@@ -116,9 +122,13 @@ class Test1
     }
 
     public function fireBullet() {
-        var bullet = new Body(2,2);
+        var bullet = new Body(5,5);
         bullet.position.setTo(player.position.x,player.position.y);
-        bullet.velocity.setTo(-1000,-350);
+        var vel = input.mousePosition.clone();
+        vel.minusEquals(player.position);
+        vel.normalize();
+        vel.multEquals(10000);
+        bullet.velocity.setTo(vel.x,vel.y);
         engine.addBody(bullet);     
     }
 
@@ -167,21 +177,21 @@ class Test1
 
         for (body in engine.dynamicBodies) {
             canvas.rect(
-                body.position.x-body.extents.x,
-                body.position.y-body.extents.y,
-                body.position.x+body.extents.x,
-                body.position.y+body.extents.y,
+                body.aabb.l,
+                body.aabb.t,
+                body.aabb.r,
+                body.aabb.b,
                 1,
-                "rgba(255,0,0,1)"                
+                body.onGround ? "rgba(255,0,0,1)" : "rgba(0,0,255,1)"               
             );
         }
 
-        for (body in engine.staticBodies) {
+        for (proxy in engine.broadphase.staticProxies) {
             canvas.rect(
-                body.position.x-body.extents.x,
-                body.position.y-body.extents.y,
-                body.position.x+body.extents.x,
-                body.position.y+body.extents.y,
+                proxy.aabb.l,
+                proxy.aabb.t,
+                proxy.aabb.r,
+                proxy.aabb.b,
                 1,
                 "rgba(0,255,0,1)"                
             );

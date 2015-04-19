@@ -1,7 +1,10 @@
 package glaze.util;
 
+import js.html.Event;
 import js.html.EventTarget;
 import glaze.geom.Vector2;
+import js.html.KeyboardEvent;
+import js.html.MouseEvent;
 
 class DigitalInput 
 {
@@ -49,32 +52,34 @@ class DigitalInput
         // mousePosition.y = target.mouseY + screenOffset.y;
     }
 
-    public function KeyDown(event : Dynamic) : Void {
+    public function KeyDown(event : KeyboardEvent) : Void {
         if (keyMap[event.keyCode] == 0) {           
             keyMap[event.keyCode] = frameRef;
         }
+        event.preventDefault();
     }
 
-    public function KeyUp(event : Dynamic) : Void {
+    public function KeyUp(event : KeyboardEvent) : Void {
         keyMap[event.keyCode] = 0;
+        event.preventDefault();
     }
 
-    public function MouseDown(event : Dynamic) : Bool {
+    public function MouseDown(event : KeyboardEvent) : Void {
         keyMap[200] = frameRef;
-        return false;
+        event.preventDefault();
     }
 
-    public function MouseUp(event : Dynamic) : Bool {
+    public function MouseUp(event : KeyboardEvent) : Void {
         keyMap[200] = 0;
-        return false;
+        event.preventDefault();
     }
 
-    public function MouseMove(event : Dynamic) : Bool {
+    public function MouseMove(event : MouseEvent) : Void {
         mousePreviousPosition.x = mousePosition.x;
         mousePreviousPosition.y = mousePosition.y;
-        mousePosition.x = event.offsetX;
-        mousePosition.y = event.offsetY;
-        return false;
+        mousePosition.x = event.clientX;
+        mousePosition.y = event.clientY;
+        event.preventDefault();
     }
 
     // public function RightMouseDown(event : MouseEvent) : Void {

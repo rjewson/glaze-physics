@@ -1,5 +1,5 @@
 
-package ds;
+package glaze.ds;
 
 import haxe.io.Bytes;
 import haxe.io.BytesData;

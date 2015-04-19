@@ -2,18 +2,21 @@
 package glaze;
 
 import glaze.geom.Vector2;
+import glaze.physics.collision.BFProxy;
+import glaze.physics.collision.BruteforceBroadphase;
 import glaze.physics.collision.Map;
 import glaze.physics.Body;
 import glaze.physics.collision.Contact;
-import glaze.geom.AABB;
 import glaze.physics.collision.Intersect;
 
 class Engine 
 {
 
     public var dynamicBodies:Array<Body>;
-    public var kinematicBodies:Array<Body>;
-    public var staticBodies:Array<Body>;
+    public var sleepingBodies:Array<Body>;
+
+    public var nf:Intersect;
+    public var broadphase:BruteforceBroadphase;
 
     public var map:Map;
 
@@ -25,9 +28,11 @@ class Engine
         this.map = map;
 
         dynamicBodies = new Array<Body>();
-        kinematicBodies = new Array<Body>();
-        staticBodies = new Array<Body>();
+        sleepingBodies = new Array<Body>();
         
+        nf = new Intersect();
+        broadphase = new BruteforceBroadphase(map,nf);
+
         contact = new Contact();
         globalForce = new Vector2(0,10); 
     }
@@ -57,19 +62,7 @@ class Engine
     */
 
     public function collide(delta:Float) {
-        var bodyCount = dynamicBodies.length;
-        for (i in 0...bodyCount) {
-            var bodyA = dynamicBodies[i];
-            map.testCollision( bodyA );
-
-            for (staticBody in staticBodies) {
-                if (Intersect.AABBvsStaticNoPenetrationAABB(bodyA.position,bodyA.extents,staticBody.position,staticBody.extents,contact)==true) {
-                    //js.Lib.debug();
-                    bodyA.respondCollision(contact);
-                }
-            }
-
-        }
+        broadphase.collide();
     }
 
     public function updatePosition(delta:Float) {
@@ -79,10 +72,12 @@ class Engine
     }
 
     public function addBody(body:Body) {
-        if (body.isStatic)
-            staticBodies.push(body)
-        else
-            dynamicBodies.push(body);
+        dynamicBodies.push(body);
+        broadphase.addProxy(body.bfproxy);
+    }
+
+    public function removeBody(body:Body) {
+        
     }
 
 }

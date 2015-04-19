@@ -2,7 +2,10 @@
 package glaze.physics;
 
 import glaze.geom.Vector2;
+import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Contact;
+import glaze.geom.AABB;
+import glaze.geom.BFBB;
 
 class Body 
 {
@@ -11,10 +14,13 @@ class Body
     public var positionCorrection:Vector2 = new Vector2();
     public var predictedPosition:Vector2 = new Vector2();
 
+    public var collisionForce:Vector2 = new Vector2();
+
     public var velocity:Vector2 = new Vector2();
     public var maxScalarVelocity:Float = 1000;
 
-    public var extents:Vector2 = new Vector2();
+    public var aabb:AABB = new AABB();
+    public var bfproxy:BFProxy = new BFProxy();
 
     public var forces:Vector2 = new Vector2();
     private var accumulatedForces:Vector2 = new Vector2();
@@ -30,16 +36,23 @@ class Body
     public var onGround:Bool = false;
     public var onGroundPrev:Bool = false;
 
-    public var isStatic:Bool = false;
+    public var bounceCount:Int = 4;
 
     public function new(w:Float,h:Float) {
-        extents.setTo(w,h);
+        aabb.extents.setTo(w,h);
+        aabb.position = this.position;
         setMass(1);
+
+        bfproxy.body = this;
+        bfproxy.aabb = aabb;
+        bfproxy.isStatic = false;
     }
 
     public function update(dt:Float,globalForces:Vector2) {
         this.dt = dt;
         forces.plusEquals(globalForces);
+        forces.plusEquals(collisionForce);
+        collisionForce.setTo(0,0);
         velocity.plusEquals(forces);
         velocity.multEquals(damping);
         velocity.clamp(maxScalarVelocity);
@@ -51,7 +64,7 @@ class Body
         onGround = false;
     }
 
-    public function respondCollision(contact:Contact) {
+    public function respondStaticCollision(contact:Contact):Bool {
         var seperation = Math.max(contact.distance,0);
         var penetration = Math.min(contact.distance,0);
         
@@ -68,7 +81,11 @@ class Body
             velocity.y -= contact.normal.y * nv;
 
             //reflect
-            //velocity.reflectEquals(contact.normal);
+            if (bounceCount>0) {
+                velocity.multEquals(0.95+Math.random()*0.05);
+                velocity.reflectEquals(contact.normal);
+                bounceCount--;
+            }
 
             //Surface is updwards?
             if (contact.normal.y < 0) {
@@ -78,8 +95,9 @@ class Body
                 velocity.x -= tangent.x * tv;
                 velocity.y -= tangent.y * tv;
             }
-
+            return true;
         } 
+        return false;
     }
 
     public function updatePosition() {

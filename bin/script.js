@@ -208,7 +208,7 @@ demo_Test1.prototype = {
 		this.canvas.display("basic example");
 		this.input = new glaze_util_DigitalInput();
 		this.input.InputTarget(window.document);
-		var mapData = new ds_Bytes2D(20,20,32,4,ds_Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnOo+Jfa5lErHIeifylJ+0PFv6PmDW/zqIkBJyMAXA=="));
+		var mapData = new glaze_ds_Bytes2D(20,20,32,4,glaze_ds_Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnOo+Jfa5lErHIeifylJ+0PFv6PmDW/zqIkBJyMAXA=="));
 		this.map = new glaze_physics_collision_Map(mapData);
 		this.map.debug = $bind(this,this.debugGrid);
 		this.debugGridItems = [];
@@ -221,11 +221,13 @@ demo_Test1.prototype = {
 		this.player = new glaze_physics_Body(20,45);
 		this.player.position.setTo(200,200);
 		this.engine.addBody(this.player);
-		this.wall = new glaze_physics_Body(40,100);
-		this.wall.isStatic = true;
-		this.wall.position.setTo(400,300);
-		this.engine.addBody(this.wall);
+		var box = glaze_physics_collision_BFProxy.CreateStaticFeature(320,300,40,100);
+		box.contactCallback = $bind(this,this.cb);
+		this.engine.broadphase.addProxy(box);
 		this.ray = new glaze_physics_collision_Ray();
+	}
+	,cb: function(a,b,c) {
+		console.log("hit");
 	}
 	,update: function(delta) {
 		this.debugGridItemsCount = 0;
@@ -243,20 +245,26 @@ demo_Test1.prototype = {
 		var right = this.input.PressedDuration(68);
 		var up = this.input.JustPressed(87);
 		var down = this.input.PressedDuration(83);
-		var fire = this.input.JustPressed(32);
+		var fire = this.input.keyMap[32] > 0;
 		var ray = this.input.keyMap[82] > 0;
 		if(left > 0) inputVelocity.x -= force;
 		if(right > 0) inputVelocity.x += force;
-		if(up) inputVelocity.y -= force * 50;
+		if(up) {
+			if(this.player.onGround) inputVelocity.y -= force * 50;
+		}
 		if(down > 0) inputVelocity.y += force;
 		if(fire) this.fireBullet();
 		if(ray) this.shootRay();
 		this.player.addForce(inputVelocity);
 	}
 	,fireBullet: function() {
-		var bullet = new glaze_physics_Body(2,2);
+		var bullet = new glaze_physics_Body(5,5);
 		bullet.position.setTo(this.player.position.x,this.player.position.y);
-		bullet.velocity.setTo(-1000,-350);
+		var vel = this.input.mousePosition.clone();
+		vel.minusEquals(this.player.position);
+		vel.normalize();
+		vel.multEquals(10000);
+		bullet.velocity.setTo(vel.x,vel.y);
 		this.engine.addBody(bullet);
 	}
 	,shootRay: function() {
@@ -299,14 +307,14 @@ demo_Test1.prototype = {
 		while(_g4 < _g11.length) {
 			var body = _g11[_g4];
 			++_g4;
-			this.canvas.rect(body.position.x - body.extents.x,body.position.y - body.extents.y,body.position.x + body.extents.x,body.position.y + body.extents.y,1,thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(255,0,0,1)"));
+			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(255,0,0,1)"):thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,0,255,1)"));
 		}
 		var _g5 = 0;
-		var _g12 = this.engine.staticBodies;
+		var _g12 = this.engine.broadphase.staticProxies;
 		while(_g5 < _g12.length) {
-			var body1 = _g12[_g5];
+			var proxy = _g12[_g5];
 			++_g5;
-			this.canvas.rect(body1.position.x - body1.extents.x,body1.position.y - body1.extents.y,body1.position.x + body1.extents.x,body1.position.y + body1.extents.y,1,thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,255,0,1)"));
+			this.canvas.rect(proxy.aabb.get_l(),proxy.aabb.get_t(),proxy.aabb.get_r(),proxy.aabb.get_b(),1,thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,255,0,1)"));
 		}
 		var _g13 = 0;
 		var _g6 = this.debugGridItemsCount;
@@ -320,43 +328,12 @@ demo_Test1.prototype = {
 	}
 	,__class__: demo_Test1
 };
-var ds_Bytes2D = function(width,height,cellSize,bytesPerCell,data) {
-	this.initalize(width,height,cellSize,bytesPerCell,data);
-};
-ds_Bytes2D.__name__ = true;
-ds_Bytes2D.uncompressData = function(str,compressed) {
-	if(compressed == null) compressed = true;
-	var mapbytes = haxe_crypto_Base64.decode(str);
-	if(compressed) mapbytes = haxe_zip_Uncompress.run(mapbytes);
-	return mapbytes;
-};
-ds_Bytes2D.prototype = {
-	initalize: function(width,height,cellSize,bytesPerCell,data) {
-		this.width = width;
-		this.height = height;
-		this.internalWidth = width * bytesPerCell;
-		this.cellSize = cellSize;
-		this.invCellSize = 1 / cellSize;
-		this.bytesPerCell = bytesPerCell;
-		if(data == null) this.data = haxe_io_Bytes.alloc(width * height * bytesPerCell); else this.data = data;
-		this.bytesData = this.data.b.buffer;
-	}
-	,get: function(x,y,offset) {
-		return this.data.b[y * this.internalWidth + x * this.bytesPerCell + offset];
-	}
-	,set: function(x,y,offset,value) {
-		this.data.b[y * this.internalWidth + x * this.bytesPerCell + offset] = value & 255;
-	}
-	,Index: function(value) {
-		return value * this.invCellSize | 0;
-	}
-	,__class__: ds_Bytes2D
-};
 var glaze_Engine = function(map) {
 	this.map = map;
 	this.dynamicBodies = [];
-	this.kinematicBodies = [];
-	this.staticBodies = [];
+	this.sleepingBodies = [];
+	this.nf = new glaze_physics_collision_Intersect();
+	this.broadphase = new glaze_physics_collision_BruteforceBroadphase(map,this.nf);
 	this.contact = new glaze_physics_collision_Contact();
 	this.globalForce = new glaze_geom_Vector2(0,10);
 };
@@ -378,20 +355,7 @@ glaze_Engine.prototype = {
 		}
 	}
 	,collide: function(delta) {
-		var bodyCount = this.dynamicBodies.length;
-		var _g = 0;
-		while(_g < bodyCount) {
-			var i = _g++;
-			var bodyA = this.dynamicBodies[i];
-			this.map.testCollision(bodyA);
-			var _g1 = 0;
-			var _g2 = this.staticBodies;
-			while(_g1 < _g2.length) {
-				var staticBody = _g2[_g1];
-				++_g1;
-				if(glaze_physics_collision_Intersect.AABBvsStaticNoPenetrationAABB(bodyA.position,bodyA.extents,staticBody.position,staticBody.extents,this.contact) == true) bodyA.respondCollision(this.contact);
-			}
-		}
+		this.broadphase.collide();
 	}
 	,updatePosition: function(delta) {
 		var _g = 0;
@@ -403,9 +367,44 @@ glaze_Engine.prototype = {
 		}
 	}
 	,addBody: function(body) {
-		if(body.isStatic) this.staticBodies.push(body); else this.dynamicBodies.push(body);
+		this.dynamicBodies.push(body);
+		this.broadphase.addProxy(body.bfproxy);
+	}
+	,removeBody: function(body) {
 	}
 	,__class__: glaze_Engine
+};
+var glaze_ds_Bytes2D = function(width,height,cellSize,bytesPerCell,data) {
+	this.initalize(width,height,cellSize,bytesPerCell,data);
+};
+glaze_ds_Bytes2D.__name__ = true;
+glaze_ds_Bytes2D.uncompressData = function(str,compressed) {
+	if(compressed == null) compressed = true;
+	var mapbytes = haxe_crypto_Base64.decode(str);
+	if(compressed) mapbytes = haxe_zip_Uncompress.run(mapbytes);
+	return mapbytes;
+};
+glaze_ds_Bytes2D.prototype = {
+	initalize: function(width,height,cellSize,bytesPerCell,data) {
+		this.width = width;
+		this.height = height;
+		this.internalWidth = width * bytesPerCell;
+		this.cellSize = cellSize;
+		this.invCellSize = 1 / cellSize;
+		this.bytesPerCell = bytesPerCell;
+		if(data == null) this.data = haxe_io_Bytes.alloc(width * height * bytesPerCell); else this.data = data;
+		this.bytesData = this.data.b.buffer;
+	}
+	,get: function(x,y,offset) {
+		return this.data.b[y * this.internalWidth + x * this.bytesPerCell + offset];
+	}
+	,set: function(x,y,offset,value) {
+		this.data.b[y * this.internalWidth + x * this.bytesPerCell + offset] = value & 255;
+	}
+	,Index: function(value) {
+		return value * this.invCellSize | 0;
+	}
+	,__class__: glaze_ds_Bytes2D
 };
 var glaze_geom_AABB = function() {
 	this.extents = new glaze_geom_Vector2();
@@ -413,13 +412,41 @@ var glaze_geom_AABB = function() {
 };
 glaze_geom_AABB.__name__ = true;
 glaze_geom_AABB.prototype = {
-	__class__: glaze_geom_AABB
+	get_l: function() {
+		return this.position.x - this.extents.x;
+	}
+	,get_t: function() {
+		return this.position.y - this.extents.y;
+	}
+	,get_r: function() {
+		return this.position.x + this.extents.x;
+	}
+	,get_b: function() {
+		return this.position.y + this.extents.y;
+	}
+	,__class__: glaze_geom_AABB
+};
+var glaze_geom_BFBB = function() {
+	this.b = -Infinity;
+	this.r = -Infinity;
+	this.t = Infinity;
+	this.l = Infinity;
+};
+glaze_geom_BFBB.__name__ = true;
+glaze_geom_BFBB.prototype = {
+	setToSweeptAABB: function(aabb,preditcedPosition) {
+		this.l = aabb.position.x - aabb.extents.x;
+		this.r = aabb.position.x + aabb.extents.x;
+		this.t = aabb.position.y - aabb.extents.y;
+		this.b = aabb.position.y + aabb.extents.y;
+	}
+	,expandToAABB: function(aabb) {
+	}
+	,__class__: glaze_geom_BFBB
 };
 var glaze_geom_Vector2 = function(x,y) {
 	if(y == null) y = .0;
 	if(x == null) x = .0;
-	this.y = .0;
-	this.x = .0;
 	this.x = x;
 	this.y = y;
 };
@@ -485,7 +512,7 @@ glaze_geom_Vector2.prototype = {
 	,__class__: glaze_geom_Vector2
 };
 var glaze_physics_Body = function(w,h) {
-	this.isStatic = false;
+	this.bounceCount = 4;
 	this.onGroundPrev = false;
 	this.onGround = false;
 	this.dt = 0;
@@ -495,20 +522,28 @@ var glaze_physics_Body = function(w,h) {
 	this.damping = 0.98;
 	this.accumulatedForces = new glaze_geom_Vector2();
 	this.forces = new glaze_geom_Vector2();
-	this.extents = new glaze_geom_Vector2();
+	this.bfproxy = new glaze_physics_collision_BFProxy();
+	this.aabb = new glaze_geom_AABB();
 	this.maxScalarVelocity = 1000;
 	this.velocity = new glaze_geom_Vector2();
+	this.collisionForce = new glaze_geom_Vector2();
 	this.predictedPosition = new glaze_geom_Vector2();
 	this.positionCorrection = new glaze_geom_Vector2();
 	this.position = new glaze_geom_Vector2();
-	this.extents.setTo(w,h);
+	this.aabb.extents.setTo(w,h);
+	this.aabb.position = this.position;
 	this.setMass(1);
+	this.bfproxy.body = this;
+	this.bfproxy.aabb = this.aabb;
+	this.bfproxy.isStatic = false;
 };
 glaze_physics_Body.__name__ = true;
 glaze_physics_Body.prototype = {
 	update: function(dt,globalForces) {
 		this.dt = dt;
 		this.forces.plusEquals(globalForces);
+		this.forces.plusEquals(this.collisionForce);
+		this.collisionForce.setTo(0,0);
 		this.velocity.plusEquals(this.forces);
 		this.velocity.multEquals(this.damping);
 		this.velocity.clamp(this.maxScalarVelocity);
@@ -517,7 +552,7 @@ glaze_physics_Body.prototype = {
 		this.onGroundPrev = this.onGround;
 		this.onGround = false;
 	}
-	,respondCollision: function(contact) {
+	,respondStaticCollision: function(contact) {
 		var seperation = Math.max(contact.distance,0);
 		var penetration = Math.min(contact.distance,0);
 		this.positionCorrection.x -= contact.normal.x * (penetration / this.dt);
@@ -526,6 +561,11 @@ glaze_physics_Body.prototype = {
 		if(nv < 0) {
 			this.velocity.x -= contact.normal.x * nv;
 			this.velocity.y -= contact.normal.y * nv;
+			if(this.bounceCount > 0) {
+				this.velocity.multEquals(0.95 + Math.random() * 0.05);
+				this.velocity.reflectEquals(contact.normal);
+				this.bounceCount--;
+			}
 			if(contact.normal.y < 0) {
 				this.onGround = true;
 				var tangent = contact.normal.rightHandNormal();
@@ -533,7 +573,9 @@ glaze_physics_Body.prototype = {
 				this.velocity.x -= tangent.x * tv;
 				this.velocity.y -= tangent.y * tv;
 			}
+			return true;
 		}
+		return false;
 	}
 	,updatePosition: function() {
 		this.positionCorrection.plusEquals(this.velocity);
@@ -553,6 +595,75 @@ glaze_physics_Body.prototype = {
 		this.invMass = 1 / mass;
 	}
 	,__class__: glaze_physics_Body
+};
+var glaze_physics_Material = function(density,elasticity,friction) {
+	if(friction == null) friction = 0.0;
+	if(elasticity == null) elasticity = 0.3;
+	if(density == null) density = 1;
+	this.density = density;
+	this.elasticity = elasticity;
+	this.friction = friction;
+};
+glaze_physics_Material.__name__ = true;
+glaze_physics_Material.prototype = {
+	__class__: glaze_physics_Material
+};
+var glaze_physics_collision_BFProxy = function() {
+	this.contactCallback = null;
+	this.isSensor = false;
+	this.isStatic = false;
+};
+glaze_physics_collision_BFProxy.__name__ = true;
+glaze_physics_collision_BFProxy.CreateStaticFeature = function(x,y,hw,hh) {
+	var bfproxy = new glaze_physics_collision_BFProxy();
+	bfproxy.aabb = new glaze_geom_AABB();
+	bfproxy.aabb.position.setTo(x,y);
+	bfproxy.aabb.extents.setTo(hw,hh);
+	bfproxy.isStatic = true;
+	return bfproxy;
+};
+glaze_physics_collision_BFProxy.prototype = {
+	get_isStatic: function() {
+		return this.body == null;
+	}
+	,__class__: glaze_physics_collision_BFProxy
+};
+var glaze_physics_collision_BruteforceBroadphase = function(map,nf) {
+	this.map = map;
+	this.nf = nf;
+	this.staticProxies = [];
+	this.dynamicProxies = [];
+};
+glaze_physics_collision_BruteforceBroadphase.__name__ = true;
+glaze_physics_collision_BruteforceBroadphase.prototype = {
+	addProxy: function(proxy) {
+		var target;
+		if(proxy.isStatic) target = this.staticProxies; else target = this.dynamicProxies;
+		target.push(proxy);
+	}
+	,collide: function() {
+		var count = this.dynamicProxies.length;
+		var _g = 0;
+		while(_g < count) {
+			var i = _g++;
+			var dynamicProxy = this.dynamicProxies[i];
+			this.map.testCollision(dynamicProxy.body);
+			var _g1 = 0;
+			var _g2 = this.staticProxies;
+			while(_g1 < _g2.length) {
+				var staticProxy = _g2[_g1];
+				++_g1;
+				this.nf.Collide(dynamicProxy,staticProxy);
+			}
+			var _g11 = i + 1;
+			while(_g11 < count) {
+				var j = _g11++;
+				var dynamicProxyB = this.dynamicProxies[j];
+				this.nf.Collide(dynamicProxy,dynamicProxyB);
+			}
+		}
+	}
+	,__class__: glaze_physics_collision_BruteforceBroadphase
 };
 var glaze_physics_collision_Contact = function() {
 	this.sweepPosition = new glaze_geom_Vector2();
@@ -578,7 +689,18 @@ glaze_physics_collision_Contact.prototype = {
 	}
 	,__class__: glaze_physics_collision_Contact
 };
-var glaze_physics_collision_Intersect = function() { };
+var glaze_physics_collision_Filter = function() {
+	this.groupIndex = 0;
+	this.maskBits = 65535;
+	this.categoryBits = 1;
+};
+glaze_physics_collision_Filter.__name__ = true;
+glaze_physics_collision_Filter.prototype = {
+	__class__: glaze_physics_collision_Filter
+};
+var glaze_physics_collision_Intersect = function() {
+	this.contact = new glaze_physics_collision_Contact();
+};
 glaze_physics_collision_Intersect.__name__ = true;
 glaze_physics_collision_Intersect.StaticAABBvsStaticAABB = function(aabb_position_A,aabb_extents_A,aabb_position_B,aabb_extents_B,contact) {
 	var dx = aabb_position_B.x - aabb_position_A.x;
@@ -681,6 +803,55 @@ glaze_physics_collision_Intersect.AABBvsStaticNoPenetrationAABB = function(aabb_
 	contact.distance = pdx * contact.normal.x + pdy * contact.normal.y;
 	return true;
 };
+glaze_physics_collision_Intersect.prototype = {
+	Collide: function(proxyA,proxyB) {
+		if(proxyA.isStatic == proxyB.isStatic == true) return false;
+		var collided = false;
+		if(proxyA.isSensor == true || proxyB.isSensor == true) collided = glaze_physics_collision_Intersect.StaticAABBvsStaticAABB(proxyA.aabb.position,proxyA.aabb.extents,proxyB.aabb.position,proxyB.aabb.extents,this.contact); else if(proxyA.isStatic != proxyB.isStatic) {
+			var staticProxy;
+			var dynamicProxy;
+			if(proxyA.isStatic) {
+				staticProxy = proxyA;
+				dynamicProxy = proxyB;
+			} else {
+				staticProxy = proxyB;
+				dynamicProxy = proxyA;
+			}
+			glaze_physics_collision_Intersect.AABBvsStaticNoPenetrationAABB(dynamicProxy.aabb.position,dynamicProxy.aabb.extents,staticProxy.aabb.position,staticProxy.aabb.extents,this.contact);
+			collided = dynamicProxy.body.respondStaticCollision(this.contact);
+		}
+		if(collided == true) {
+			if(proxyA.contactCallback != null) proxyA.contactCallback(proxyA,proxyB,this.contact);
+			if(proxyB.contactCallback != null) proxyB.contactCallback(proxyB,proxyA,this.contact);
+		}
+		return collided;
+	}
+	,CollideDynamicStatic: function(dynamicProxy,staticProxy) {
+		if(dynamicProxy.isSensor == true) return;
+		if(staticProxy.isSensor == true) return;
+		if(glaze_physics_collision_Intersect.AABBvsStaticNoPenetrationAABB(dynamicProxy.aabb.position,dynamicProxy.aabb.extents,staticProxy.aabb.position,staticProxy.aabb.extents,this.contact) == true) dynamicProxy.body.respondStaticCollision(this.contact);
+	}
+	,CollideDynamicDynamic: function(dynamicProxyA,dynamicProxyB) {
+		if(glaze_physics_collision_Intersect.StaticAABBvsStaticAABB(dynamicProxyA.aabb.position,dynamicProxyA.aabb.extents,dynamicProxyB.aabb.position,dynamicProxyB.aabb.extents,this.contact) == true) {
+		}
+	}
+	,Spring: function(bodyA,bodyB,length,k) {
+		var dx = bodyA.position.x - bodyB.position.x;
+		var dy = bodyA.position.y - bodyB.position.y;
+		var dist = Math.sqrt(dx * dx + dy * dy);
+		if(dist < length) return;
+		var dx_n = dx / dist;
+		var dy_n = dy / dist;
+		var true_offset = dist - length;
+		dx_n *= true_offset;
+		dy_n *= true_offset;
+		var fx = k * dx_n;
+		var fy = k * dy_n;
+		bodyA.collisionForce.plusEquals(new glaze_geom_Vector2(fx,fy));
+		bodyB.collisionForce.plusEquals(new glaze_geom_Vector2(-fx,-fy));
+	}
+	,__class__: glaze_physics_collision_Intersect
+};
 var glaze_physics_collision_Map = function(data) {
 	this.tileExtents = new glaze_geom_Vector2();
 	this.tilePosition = new glaze_geom_Vector2();
@@ -693,10 +864,10 @@ var glaze_physics_collision_Map = function(data) {
 glaze_physics_collision_Map.__name__ = true;
 glaze_physics_collision_Map.prototype = {
 	testCollision: function(body) {
-		this.startX = this.data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.extents.x);
-		this.startY = this.data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.extents.y);
-		this.endX = this.data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.extents.x + .5) + 1;
-		this.endY = this.data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.extents.y + .5) + 1;
+		this.startX = this.data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x);
+		this.startY = this.data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y);
+		this.endX = this.data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x + .5) + 1;
+		this.endY = this.data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y + .5) + 1;
 		var _g1 = this.startX;
 		var _g = this.endX;
 		while(_g1 < _g) {
@@ -709,12 +880,12 @@ glaze_physics_collision_Map.prototype = {
 				this.tilePosition.y = y * this.tileSize + this.tileHalfSize;
 				var cell = this.data.get(x,y,0);
 				if(cell > 0) {
-					if(glaze_physics_collision_Intersect.AABBvsStaticNoPenetrationAABB(body.position,body.extents,this.tilePosition,this.tileExtents,this.contact) == true) {
+					if(glaze_physics_collision_Intersect.AABBvsStaticNoPenetrationAABB(body.position,body.aabb.extents,this.tilePosition,this.tileExtents,this.contact) == true) {
 						var nextX = x + (this.contact.normal.x | 0);
 						var nextY = y + (this.contact.normal.y | 0);
 						var nextCell = this.data.get(nextX,nextY,0);
 						if(nextCell == 0) {
-							body.respondCollision(this.contact);
+							body.respondStaticCollision(this.contact);
 							if(this.debug != null) this.debug(x,y);
 						}
 					}
@@ -889,24 +1060,26 @@ glaze_util_DigitalInput.prototype = {
 	}
 	,KeyDown: function(event) {
 		if(this.keyMap[event.keyCode] == 0) this.keyMap[event.keyCode] = this.frameRef;
+		event.preventDefault();
 	}
 	,KeyUp: function(event) {
 		this.keyMap[event.keyCode] = 0;
+		event.preventDefault();
 	}
 	,MouseDown: function(event) {
 		this.keyMap[200] = this.frameRef;
-		return false;
+		event.preventDefault();
 	}
 	,MouseUp: function(event) {
 		this.keyMap[200] = 0;
-		return false;
+		event.preventDefault();
 	}
 	,MouseMove: function(event) {
 		this.mousePreviousPosition.x = this.mousePosition.x;
 		this.mousePreviousPosition.y = this.mousePosition.y;
-		this.mousePosition.x = event.offsetX;
-		this.mousePosition.y = event.offsetY;
-		return false;
+		this.mousePosition.x = event.clientX;
+		this.mousePosition.y = event.clientY;
+		event.preventDefault();
 	}
 	,Pressed: function(keyCode) {
 		return this.keyMap[keyCode] > 0;
@@ -6352,3 +6525,5 @@ thx_core_Strings.SPLIT_LINES = new EReg("\r\n|\n\r|\n|\r","g");
 thx_core_Timer.FRAME_RATE = Math.round(16.6666666666666679);
 Main.main();
 })(typeof console != "undefined" ? console : {log:function(){}});
+
+//# sourceMappingURL=script.js.map

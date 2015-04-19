@@ -1,7 +1,7 @@
 
 package glaze.physics.collision;
 
-import ds.Bytes2D;
+import glaze.ds.Bytes2D;
 import glaze.geom.Vector2;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Intersect;
@@ -40,11 +40,11 @@ class Map
 
     public function testCollision(body:Body) {
 
-        startX = data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.extents.x - CORRECTION);
-        startY = data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.extents.y - CORRECTION);
+        startX = data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x - CORRECTION);
+        startY = data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y - CORRECTION);
 
-        endX = data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.extents.x + CORRECTION + ROUNDUP) + 1;
-        endY = data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.extents.y + CORRECTION + ROUNDUP) + 1;
+        endX = data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x + CORRECTION + ROUNDUP) + 1;
+        endY = data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y + CORRECTION + ROUNDUP) + 1;
 
         for (x in startX...endX) {
             for (y in startY...endY) {
@@ -52,12 +52,12 @@ class Map
                 tilePosition.y = (y*tileSize)+tileHalfSize;
                 var cell = data.get(x,y,0);
                 if (cell>0) {
-                    if (Intersect.AABBvsStaticNoPenetrationAABB(body.position,body.extents,tilePosition,tileExtents,contact)==true) {
+                    if (Intersect.AABBvsStaticNoPenetrationAABB(body.position,body.aabb.extents,tilePosition,tileExtents,contact)==true) {
                         var nextX:Int = x + Std.int(contact.normal.x);
                         var nextY:Int = y + Std.int(contact.normal.y);
                         var nextCell = data.get(nextX,nextY,0);
                         if (nextCell==0) {
-                            body.respondCollision(contact);
+                            body.respondStaticCollision(contact);
                             if (debug!=null)
                                 debug(x,y);
                         }

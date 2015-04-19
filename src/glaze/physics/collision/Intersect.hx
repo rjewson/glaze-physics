@@ -2,11 +2,121 @@
 package glaze.physics.collision;
 
 import glaze.geom.Vector2;
+import glaze.physics.collision.BFProxy;
+import glaze.physics.collision.Contact;
 
 class Intersect 
 {
 
     public static inline var epsilon:Float = 1e-8;
+    
+    public var contact:Contact = new Contact();
+
+    public function new() {
+        
+    }
+
+    public function Collide(proxyA:BFProxy,proxyB:BFProxy):Bool {
+        
+        if (proxyA.isStatic==proxyB.isStatic==true)
+            return false;
+
+        //Do filtering
+
+        var collided = false;
+
+        if (proxyA.isSensor==true || proxyB.isSensor==true) {
+            collided = Intersect.StaticAABBvsStaticAABB(
+                    proxyA.aabb.position,
+                    proxyA.aabb.extents,
+                    proxyB.aabb.position,
+                    proxyB.aabb.extents,
+                    contact);
+        } else if (proxyA.isStatic!=proxyB.isStatic) {
+            var staticProxy,dynamicProxy;
+            if (proxyA.isStatic) {
+                staticProxy = proxyA;
+                dynamicProxy = proxyB;
+            } else {
+                staticProxy = proxyB;
+                dynamicProxy = proxyA;
+            }
+            Intersect.AABBvsStaticNoPenetrationAABB(
+                    dynamicProxy.aabb.position,
+                    dynamicProxy.aabb.extents,
+                    staticProxy.aabb.position,
+                    staticProxy.aabb.extents,
+                    contact);
+            collided = dynamicProxy.body.respondStaticCollision(contact);
+        }
+
+        if (collided==true) {
+            if (proxyA.contactCallback!=null)
+                proxyA.contactCallback(proxyA,proxyB,contact);
+            if (proxyB.contactCallback!=null)
+                proxyB.contactCallback(proxyB,proxyA,contact);
+        }
+
+        return collided;
+    }
+
+    public function CollideDynamicStatic(dynamicProxy:BFProxy,staticProxy:BFProxy) {
+        
+        if (dynamicProxy.isSensor==true) {
+            return;
+        }
+
+        if (staticProxy.isSensor==true) {
+            return;
+        }
+
+        if (Intersect.AABBvsStaticNoPenetrationAABB(
+                    dynamicProxy.aabb.position,
+                    dynamicProxy.aabb.extents,
+                    staticProxy.aabb.position,
+                    staticProxy.aabb.extents,
+                    contact)==true) {
+                    
+            dynamicProxy.body.respondStaticCollision(contact);
+
+        }
+
+    }
+
+    public function CollideDynamicDynamic(dynamicProxyA:BFProxy,dynamicProxyB:BFProxy) {
+        if (Intersect.StaticAABBvsStaticAABB(
+                    dynamicProxyA.aabb.position,
+                    dynamicProxyA.aabb.extents,
+                    dynamicProxyB.aabb.position,
+                    dynamicProxyB.aabb.extents,
+                    contact
+            )==true) {
+            //Spring(dynamicProxyA.body,dynamicProxyB.body,20,1);
+        }
+    }
+
+    public function Spring(bodyA:Body,bodyB:Body,length:Float,k:Float) {
+//js.Lib.debug();
+        var dx = bodyA.position.x - bodyB.position.x;
+        var dy = bodyA.position.y - bodyB.position.y;
+        // But, we need to account for 'rest length' being `l` not 0
+            // Normalize dx and dy to length 1; purely directional. `_n` means 'normalized' here
+        var dist = Math.sqrt(dx*dx + dy*dy);//+0.000001;
+        if (dist<length)
+            return;
+        var dx_n = dx / dist;
+        var dy_n = dy / dist;
+        
+        var true_offset = (dist - length);
+        dx_n *= true_offset;
+        dy_n *= true_offset;
+        var fx = k*dx_n;
+        var fy = k*dy_n;
+        //bodyA.addForce(new Vector2(fx,fy));
+        //bodyB.addForce(new Vector2(-fx,-fy));
+        bodyA.collisionForce.plusEquals(new Vector2(fx,fy));
+        bodyB.collisionForce.plusEquals(new Vector2(-fx,-fy));
+    }
 
     public static function StaticAABBvsStaticAABB(aabb_position_A:Vector2,aabb_extents_A:Vector2,aabb_position_B:Vector2,aabb_extents_B:Vector2,contact:Contact):Bool {
         var dx = aabb_position_B.x - aabb_position_A.x;

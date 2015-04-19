@@ -4,8 +4,8 @@ package glaze.geom;
 class Vector2 
 {
 
-    public var x:Float = .0;
-    public var y:Float = .0;
+    public var x:Float;
+    public var y:Float;
 
     inline public static var ZERO_TOLERANCE = 1e-08;
 

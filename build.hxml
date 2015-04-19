@@ -2,5 +2,5 @@
 -cp src
 -lib minicanvas
 -main Main
-#-debug
+-debug
 -cmd osascript bin/refreshTab
