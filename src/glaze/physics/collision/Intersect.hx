@@ -18,21 +18,26 @@ class Intersect
 
     public function Collide(proxyA:BFProxy,proxyB:BFProxy):Bool {
         
-        if (proxyA.isStatic==proxyB.isStatic==true)
+        //Exit on static vs statics, they should never be sent but you never know
+        if (proxyA.isStatic && proxyB.isStatic)
             return false;
 
         //Do filtering
 
         var collided = false;
 
-        if (proxyA.isSensor==true || proxyB.isSensor==true) {
+        //If either are sensors, or both are dynamic
+        //Then do static<>static test
+        if ( proxyA.isSensor || proxyB.isSensor || (!proxyA.isStatic && !proxyB.isStatic) ) {
             collided = Intersect.StaticAABBvsStaticAABB(
                     proxyA.aabb.position,
                     proxyA.aabb.extents,
                     proxyB.aabb.position,
                     proxyB.aabb.extents,
                     contact);
-        } else if (proxyA.isStatic!=proxyB.isStatic) {
+        } else {
+            //Were just let with static<>dynamic collisions
+            //Order them
             var staticProxy,dynamicProxy;
             if (proxyA.isStatic) {
                 staticProxy = proxyA;
@@ -41,16 +46,19 @@ class Intersect
                 staticProxy = proxyB;
                 dynamicProxy = proxyA;
             }
-            Intersect.AABBvsStaticNoPenetrationAABB(
+            //Test
+            Intersect.AABBvsStaticSolidAABB(
                     dynamicProxy.aabb.position,
                     dynamicProxy.aabb.extents,
                     staticProxy.aabb.position,
                     staticProxy.aabb.extents,
                     contact);
+            //We have to the response process and get the result
             collided = dynamicProxy.body.respondStaticCollision(contact);
         }
 
         if (collided==true) {
+            //Call any registered calbacks
             if (proxyA.contactCallback!=null)
                 proxyA.contactCallback(proxyA,proxyB,contact);
             if (proxyB.contactCallback!=null)
@@ -58,41 +66,6 @@ class Intersect
         }
 
         return collided;
-    }
-
-    public function CollideDynamicStatic(dynamicProxy:BFProxy,staticProxy:BFProxy) {
-        
-        if (dynamicProxy.isSensor==true) {
-            return;
-        }
-
-        if (staticProxy.isSensor==true) {
-            return;
-        }
-
-        if (Intersect.AABBvsStaticNoPenetrationAABB(
-                    dynamicProxy.aabb.position,
-                    dynamicProxy.aabb.extents,
-                    staticProxy.aabb.position,
-                    staticProxy.aabb.extents,
-                    contact)==true) {
-                    
-            dynamicProxy.body.respondStaticCollision(contact);
-
-        }
-
-    }
-
-    public function CollideDynamicDynamic(dynamicProxyA:BFProxy,dynamicProxyB:BFProxy) {
-        if (Intersect.StaticAABBvsStaticAABB(
-                    dynamicProxyA.aabb.position,
-                    dynamicProxyA.aabb.extents,
-                    dynamicProxyB.aabb.position,
-                    dynamicProxyB.aabb.extents,
-                    contact
-            )==true) {
-            //Spring(dynamicProxyA.body,dynamicProxyB.body,20,1);
-        }
     }
 
     public function Spring(bodyA:Body,bodyB:Body,length:Float,k:Float) {
@@ -114,8 +87,8 @@ class Intersect
         var fy = k*dy_n;
         //bodyA.addForce(new Vector2(fx,fy));
         //bodyB.addForce(new Vector2(-fx,-fy));
-        bodyA.collisionForce.plusEquals(new Vector2(fx,fy));
-        bodyB.collisionForce.plusEquals(new Vector2(-fx,-fy));
+        // bodyA.collisionForce.plusEquals(new Vector2(fx,fy));
+        // bodyB.collisionForce.plusEquals(new Vector2(-fx,-fy));
     }
 
     public static function StaticAABBvsStaticAABB(aabb_position_A:Vector2,aabb_extents_A:Vector2,aabb_position_B:Vector2,aabb_extents_B:Vector2,contact:Contact):Bool {
@@ -216,7 +189,7 @@ class Intersect
         }
     }
 
-    public static function AABBvsStaticNoPenetrationAABB(aabb_position_A:Vector2,aabb_extents_A:Vector2,aabb_position_B:Vector2,aabb_extents_B:Vector2,contact:Contact):Bool {
+    public static function AABBvsStaticSolidAABB(aabb_position_A:Vector2,aabb_extents_A:Vector2,aabb_position_B:Vector2,aabb_extents_B:Vector2,contact:Contact):Bool {
 
         //New overlap code, handle corners better
         var dx = aabb_position_B.x - aabb_position_A.x;
@@ -244,7 +217,7 @@ class Intersect
         //     contact.normal.y = dy>=0 ? -1 : 1;
         // }
 
-        var pcx = ((contact.normal.x * (aabb_extents_A.x+aabb_extents_B.x) ) + aabb_position_B.x);
+        var pcx = (contact.normal.x * (aabb_extents_A.x+aabb_extents_B.x) ) + aabb_position_B.x;
         var pcy = (contact.normal.y * (aabb_extents_A.y+aabb_extents_B.y) ) + aabb_position_B.y;
 
         var pdx = aabb_position_A.x - pcx;

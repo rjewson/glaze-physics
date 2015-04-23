@@ -14,8 +14,6 @@ class Body
     public var positionCorrection:Vector2 = new Vector2();
     public var predictedPosition:Vector2 = new Vector2();
 
-    public var collisionForce:Vector2 = new Vector2();
-
     public var velocity:Vector2 = new Vector2();
     public var maxScalarVelocity:Float = 1000;
 
@@ -25,8 +23,7 @@ class Body
     public var forces:Vector2 = new Vector2();
     private var accumulatedForces:Vector2 = new Vector2();
 
-    public var damping:Float = 0.98;
-    public var friction:Float = 0;
+    public var damping:Float = 1;
 
     public var mass:Float = 1;
     public var invMass:Float = 1;
@@ -38,6 +35,8 @@ class Body
 
     public var bounceCount:Int = 4;
 
+    public var debug:Int = 1;
+
     public function new(w:Float,h:Float) {
         aabb.extents.setTo(w,h);
         aabb.position = this.position;
@@ -48,17 +47,19 @@ class Body
         bfproxy.isStatic = false;
     }
 
-    public function update(dt:Float,globalForces:Vector2) {
+    public function update(dt:Float,globalForces:Vector2,globalDamping:Float) {
         this.dt = dt;
         forces.plusEquals(globalForces);
-        forces.plusEquals(collisionForce);
-        collisionForce.setTo(0,0);
+        // forces.plusEquals(collisionForce);
         velocity.plusEquals(forces);
-        velocity.multEquals(damping);
+        velocity.multEquals(globalDamping*damping);
         velocity.clamp(maxScalarVelocity);
 
         predictedPosition.copy(position);
         predictedPosition.plusMultEquals(velocity,dt);
+
+        forces.setTo(0,0);
+        damping = 1;
 
         onGroundPrev = onGround;
         onGround = false;
@@ -79,14 +80,10 @@ class Body
             //Cancel normal vel
             velocity.x -= contact.normal.x * nv;
             velocity.y -= contact.normal.y * nv;
-
-            //reflect
-            if (bounceCount>0) {
-                velocity.multEquals(0.95+Math.random()*0.05);
-                velocity.reflectEquals(contact.normal);
-                bounceCount--;
-            }
-
+if (debug>0) {
+    trace(contact.normal.y,nv,seperation,contact.distance);
+    debug--;
+}
             //Surface is updwards?
             if (contact.normal.y < 0) {
                 onGround = true;
@@ -95,19 +92,27 @@ class Body
                 velocity.x -= tangent.x * tv;
                 velocity.y -= tangent.y * tv;
             }
+
+            //reflect
+            if (bounceCount>0) {
+                //velocity.multEquals(0.95+Math.random()*0.05);
+                velocity.reflectEquals(contact.normal);
+                //addForce(new Vector2(contact.normal.x*500,contact.normal.y*500));
+                bounceCount--;
+            }
+
             return true;
         } 
         return false;
     }
 
     public function updatePosition() {
-        //position.x += (velocity.x*dt) + (positionCorrection.x*dt);
-        //position.y += (velocity.y*dt) + (positionCorrection.y*dt);
-        positionCorrection.plusEquals(velocity);
-        positionCorrection.multEquals(dt);
-        position.plusEquals(positionCorrection);
+        position.x += (velocity.x*dt) + (positionCorrection.x*dt);
+        position.y += (velocity.y*dt) + (positionCorrection.y*dt);
+        //positionCorrection.plusEquals(velocity);
+        //positionCorrection.multEquals(dt);
+        //position.plusEquals(positionCorrection);
         positionCorrection.setTo(0,0);
-        forces.setTo(0,0);
     }
 
     public function addForce(f:Vector2) {

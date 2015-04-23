@@ -13,6 +13,7 @@ class DigitalInput
     public var mousePosition : Vector2;
     public var mousePreviousPosition : Vector2;
     public var mouseOffset : Vector2;
+    public var inputCorrection : Vector2;
     private var frameRef : Int;
     private var target : EventTarget;
 
@@ -27,8 +28,7 @@ class DigitalInput
         frameRef = 2;       
     }
     
-    public function InputTarget(target : EventTarget) : Void {
-
+    public function InputTarget(target : EventTarget, inputCorrection:Vector2) : Void {
         this.target = target;
         target.addEventListener("keydown",KeyDown,false);
         target.addEventListener("keyup",KeyUp,false);
@@ -39,7 +39,7 @@ class DigitalInput
         target.addEventListener("mousemove",MouseMove,false);
         // target.addEventListener(MouseEvent.RIGHT_MOUSE_DOWN, RightMouseDown, false, 0, true);
         // target.addEventListener(MouseEvent.RIGHT_MOUSE_UP, RightMouseUp, false, 0, true);
-        
+        this.inputCorrection = inputCorrection;
     }
 
     public function Update(x:Float,y:Float) : Void {

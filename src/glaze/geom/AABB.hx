@@ -23,4 +23,12 @@ class AABB
     inline function get_r():Float { return this.position.x+this.extents.x;}
     inline function get_b():Float { return this.position.y+this.extents.y;}
 
+    public function overlapArea(aabb:AABB):Float {
+        var _l = Math.max(this.l,aabb.l);
+        var _r = Math.min(this.r,aabb.r);
+        var _t = Math.max(this.t,aabb.t);
+        var _b = Math.min(this.b,aabb.b);
+        return (_r-_l) * (_b-_t);
+    }
+
 }

@@ -4,6 +4,7 @@ package glaze.physics.collision;
 import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Intersect;
 import glaze.physics.collision.Map;
+import glaze.geom.Vector2;
 
 class BruteforceBroadphase 
 {
@@ -35,25 +36,19 @@ class BruteforceBroadphase
 
             for (staticProxy in staticProxies) {
                 //test A<>static
-                //nf.CollideDynamicStatic(dynamicProxy,staticProxy);
                 nf.Collide(dynamicProxy,staticProxy);
-
             }
 
             for (j in i+1...count) {
                 var dynamicProxyB = dynamicProxies[j];
-                //nf.CollideDynamicDynamic(dynamicProxy,dynamicProxyB);
                 nf.Collide(dynamicProxy,dynamicProxyB);
-
-                //test A<>B
-                //if (Intersect.StaticAABBvsStaticAABB(bodyA.position,bodyA.aabb.extents,bodyB.position,bodyB.aabb.extents,contact)==true) {
-                //  trace('ding');
-                //}
-
             }
 
         }
+    }
 
+    public function Search(position:Vector2,radius:Float,result:Body->Float->Void):Void {
+        return null;
     }
 
 }

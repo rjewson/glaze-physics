@@ -57,9 +57,11 @@ class Test1
         canvas.display("basic example");
 
         input = new DigitalInput();
-        input.InputTarget(Browser.document);
+        input.InputTarget(Browser.document,new Vector2());
 
-        var mapData = new glaze.ds.Bytes2D(20,20,32,4,glaze.ds.Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnOo+Jfa5lErHIeifylJ+0PFv6PmDW/zqIkBJyMAXA=="));
+        // Browser.document.getElementById("stopbutton");
+
+        var mapData = new glaze.ds.Bytes2D(20,20,32,4,glaze.ds.Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnMw+pce8UEtswdj+GEzj1ppf6j4d6ibR6ydI9U8amIAODcAYw=="));
         map = new Map(mapData);
         map.debug = debugGrid;
         debugGridItems = new Array<Int>();
@@ -77,15 +79,20 @@ class Test1
         player.position.setTo(200,200);
         engine.addBody(player);
 
-        var box = BFProxy.CreateStaticFeature(320,300,40,100);
+        //10,17 water center
+        var box = BFProxy.CreateStaticFeature(464,544,144,64);
         box.contactCallback = cb;
+        box.isSensor = true;
         engine.broadphase.addProxy(box);
         
         ray = new Ray();
     }
 
     public function cb(a:BFProxy,b:BFProxy,c:Contact) {
-        trace("hit");
+        var area = a.aabb.overlapArea(b.aabb);
+        b.body.damping = 0.9;
+        b.body.addForce(new Vector2(0,-area/200));
+        //trace(area);
     }
 
     public function update(delta:Float) {
@@ -107,13 +114,14 @@ class Test1
         var up = input.JustPressed(87);     //w
         var down = input.PressedDuration(83);   //s
         var fire = input.Pressed(32);
+
         var ray = input.Pressed(82);
         if (left>0) inputVelocity.x  -= force;
         if (right>0) inputVelocity.x += force;
         if (up) {
-            if (player.onGround) {
+            //if (player.onGround) {
                 inputVelocity.y    -= force*50;
-            }
+            //}
         }
         if (down>0) inputVelocity.y  += force;
         if (fire) fireBullet();
@@ -122,7 +130,7 @@ class Test1
     }
 
     public function fireBullet() {
-        var bullet = new Body(5,5);
+        var bullet = new Body(10,10);
         bullet.position.setTo(player.position.x,player.position.y);
         var vel = input.mousePosition.clone();
         vel.minusEquals(player.position);
@@ -133,10 +141,10 @@ class Test1
     }
 
     public function shootRay() {
-        var target = player.position.clone();
-        target.x-=1;
-        target.y-=1;
-        ray.initalize(player.position, target, 1000 );
+        // var target = player.position.clone();
+        // target.x-=1;
+        // target.y-=1;
+        ray.initalize(player.position, input.mousePosition, 1000 );
         map.castRay(ray);
     }
 

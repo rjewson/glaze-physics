@@ -24,10 +24,6 @@ class BFProxy
     public function new() {
     }
 
-    inline function get_isStatic():Bool {
-        return (body==null);
-    }
-
     public static inline function CreateStaticFeature(x:Float,y:Float,hw:Float,hh:Float):BFProxy {
         var bfproxy = new BFProxy();
         bfproxy.aabb = new AABB();

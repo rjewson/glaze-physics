@@ -48,11 +48,12 @@ class Map
 
         for (x in startX...endX) {
             for (y in startY...endY) {
+                //var y = endY - (yy-startY);
                 tilePosition.x = (x*tileSize)+tileHalfSize;
                 tilePosition.y = (y*tileSize)+tileHalfSize;
                 var cell = data.get(x,y,0);
                 if (cell>0) {
-                    if (Intersect.AABBvsStaticNoPenetrationAABB(body.position,body.aabb.extents,tilePosition,tileExtents,contact)==true) {
+                    if (Intersect.AABBvsStaticSolidAABB(body.position,body.aabb.extents,tilePosition,tileExtents,contact)==true) {
                         var nextX:Int = x + Std.int(contact.normal.x);
                         var nextY:Int = y + Std.int(contact.normal.y);
                         var nextCell = data.get(nextX,nextY,0);
