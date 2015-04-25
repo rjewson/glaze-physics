@@ -119,9 +119,9 @@ class Test1
         if (left>0) inputVelocity.x  -= force;
         if (right>0) inputVelocity.x += force;
         if (up) {
-            //if (player.onGround) {
+            if (player.onGround) {
                 inputVelocity.y    -= force*50;
-            //}
+            }
         }
         if (down>0) inputVelocity.y  += force;
         if (fire) fireBullet();
@@ -130,7 +130,7 @@ class Test1
     }
 
     public function fireBullet() {
-        var bullet = new Body(10,10);
+        var bullet = new Body(5,5);
         bullet.position.setTo(player.position.x,player.position.y);
         var vel = input.mousePosition.clone();
         vel.minusEquals(player.position);

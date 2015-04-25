@@ -252,14 +252,16 @@ demo_Test1.prototype = {
 		var ray = this.input.keyMap[82] > 0;
 		if(left > 0) inputVelocity.x -= force;
 		if(right > 0) inputVelocity.x += force;
-		if(up) inputVelocity.y -= force * 50;
+		if(up) {
+			if(this.player.onGround) inputVelocity.y -= force * 50;
+		}
 		if(down > 0) inputVelocity.y += force;
 		if(fire) this.fireBullet();
 		if(ray) this.shootRay();
 		this.player.addForce(inputVelocity);
 	}
 	,fireBullet: function() {
-		var bullet = new glaze_physics_Body(10,10);
+		var bullet = new glaze_physics_Body(5,5);
 		bullet.position.setTo(this.player.position.x,this.player.position.y);
 		var vel = this.input.mousePosition.clone();
 		vel.minusEquals(this.player.position);
@@ -333,7 +335,7 @@ var glaze_Engine = function(map) {
 	this.nf = new glaze_physics_collision_Intersect();
 	this.broadphase = new glaze_physics_collision_BruteforceBroadphase(map,this.nf);
 	this.contact = new glaze_physics_collision_Contact();
-	this.globalForce = new glaze_geom_Vector2(0,0);
+	this.globalForce = new glaze_geom_Vector2(0,9);
 };
 glaze_Engine.__name__ = true;
 glaze_Engine.prototype = {
@@ -522,6 +524,7 @@ var glaze_physics_Body = function(w,h) {
 	this.onGroundPrev = false;
 	this.onGround = false;
 	this.dt = 0;
+	this.bullet = false;
 	this.invMass = 1;
 	this.mass = 1;
 	this.damping = 1;
@@ -565,10 +568,6 @@ glaze_physics_Body.prototype = {
 		if(nv < 0) {
 			this.velocity.x -= contact.normal.x * nv;
 			this.velocity.y -= contact.normal.y * nv;
-			if(this.debug > 0) {
-				haxe_Log.trace(contact.normal.y,{ fileName : "Body.hx", lineNumber : 84, className : "glaze.physics.Body", methodName : "respondStaticCollision", customParams : [nv,seperation,contact.distance]});
-				this.debug--;
-			}
 			if(contact.normal.y < 0) {
 				this.onGround = true;
 				var tangent = contact.normal.rightHandNormal();
@@ -576,17 +575,14 @@ glaze_physics_Body.prototype = {
 				this.velocity.x -= tangent.x * tv;
 				this.velocity.y -= tangent.y * tv;
 			}
-			if(this.bounceCount > 0) {
-				this.velocity.reflectEquals(contact.normal);
-				this.bounceCount--;
-			}
 			return true;
 		}
 		return false;
 	}
 	,updatePosition: function() {
-		this.position.x += this.velocity.x * this.dt + this.positionCorrection.x * this.dt;
-		this.position.y += this.velocity.y * this.dt + this.positionCorrection.y * this.dt;
+		this.positionCorrection.plusEquals(this.velocity);
+		this.positionCorrection.multEquals(this.dt);
+		this.position.plusEquals(this.positionCorrection);
 		this.positionCorrection.setTo(0,0);
 	}
 	,addForce: function(f) {
@@ -882,6 +878,7 @@ glaze_physics_collision_Map.prototype = {
 						if(nextCell == 0) {
 							body.respondStaticCollision(this.contact);
 							if(this.debug != null) this.debug(x,y);
+						} else {
 						}
 					}
 				}
@@ -902,7 +899,7 @@ glaze_physics_collision_Map.prototype = {
 			if(dy < 0) contact.normal.y = 1; else contact.normal.y = -1;
 		}
 		if(aabb_position_A.y + aabb_extents_A.y < aabb_position_B.y + aabb_extents_B.y && aabb_position_A.x - aabb_extents_B.x > aabb_position_B.x - aabb_extents_B.x) {
-			haxe_Log.trace("a",{ fileName : "Map.hx", lineNumber : 95, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
+			console.log("a");
 			contact.normal.x = 0.707106781186547462;
 			contact.normal.y = -0.707106781186547462;
 			var cornerTile = new glaze_geom_Vector2(aabb_position_B.x - aabb_extents_B.x,aabb_position_B.y - aabb_extents_B.y);
@@ -911,7 +908,7 @@ glaze_physics_collision_Map.prototype = {
 			contact.distance = (contact.normal.dot(cornerBody) - d) / contact.normal.dot(contact.normal);
 			return true;
 		} else {
-			haxe_Log.trace("b",{ fileName : "Map.hx", lineNumber : 106, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
+			console.log("b");
 			var pcx = contact.normal.x * (aabb_extents_A.x + aabb_extents_B.x) + aabb_position_B.x;
 			var pcy = contact.normal.y * (aabb_extents_A.y + aabb_extents_B.y) + aabb_position_B.y;
 			var pdx = aabb_position_A.x - pcx;
@@ -926,37 +923,29 @@ glaze_physics_collision_Map.prototype = {
 		var cX = x * this.tileSize;
 		var cY = y * this.tileSize;
 		var d = ray.direction;
-		var stepX;
-		var tMaxX;
-		var tDeltaX;
+		var stepX = 0;
+		var tMaxX = 100000000;
+		var tDeltaX = 0;
 		if(d.x < 0) {
 			stepX = -1;
 			tMaxX = (cX - ray.origin.x) / d.x;
 			tDeltaX = this.tileSize / -d.x;
-		} else if(0 < d.x) {
+		} else if(d.x > 0) {
 			stepX = 1;
 			tMaxX = (cX + this.tileSize - ray.origin.x) / d.x;
 			tDeltaX = this.tileSize / d.x;
-		} else {
-			stepX = 0;
-			tMaxX = 100000000;
-			tDeltaX = 0;
 		}
-		var stepY;
-		var tMaxY;
-		var tDeltaY;
+		var stepY = 0;
+		var tMaxY = 100000000;
+		var tDeltaY = 0;
 		if(d.y < 0) {
 			stepY = -1;
 			tMaxY = (cY - ray.origin.y) / d.y;
 			tDeltaY = this.tileSize / -d.y;
-		} else if(0 < d.y) {
+		} else if(d.y > 0) {
 			stepY = 1;
 			tMaxY = (cY + this.tileSize - ray.origin.y) / d.y;
 			tDeltaY = this.tileSize / d.y;
-		} else {
-			stepY = 0;
-			tMaxY = 100000000;
-			tDeltaY = 0;
 		}
 		var pX = ray.origin.x;
 		var pY = ray.origin.y;
@@ -1246,11 +1235,6 @@ var haxe__$Int64__$_$_$Int64 = function(high,low) {
 haxe__$Int64__$_$_$Int64.__name__ = true;
 haxe__$Int64__$_$_$Int64.prototype = {
 	__class__: haxe__$Int64__$_$_$Int64
-};
-var haxe_Log = function() { };
-haxe_Log.__name__ = true;
-haxe_Log.trace = function(v,infos) {
-	js_Boot.__trace(v,infos);
 };
 var haxe_crypto_Adler32 = function() {
 	this.a1 = 1;
@@ -2057,25 +2041,6 @@ js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
 });
 var js_Boot = function() { };
 js_Boot.__name__ = true;
-js_Boot.__unhtml = function(s) {
-	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-};
-js_Boot.__trace = function(v,i) {
-	var msg;
-	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
-	msg += js_Boot.__string_rec(v,"");
-	if(i != null && i.customParams != null) {
-		var _g = 0;
-		var _g1 = i.customParams;
-		while(_g < _g1.length) {
-			var v1 = _g1[_g];
-			++_g;
-			msg += "," + js_Boot.__string_rec(v1,"");
-		}
-	}
-	var d;
-	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js_Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
-};
 js_Boot.getClass = function(o) {
 	if((o instanceof Array) && o.__enum__ == null) return Array; else {
 		var cl = o.__class__;
@@ -2410,7 +2375,7 @@ minicanvas_MiniCanvas.create = function(width,height,scaleMode) {
 minicanvas_MiniCanvas.prototype = {
 	display: function(name) {
 		this.deltaTime = performance.now() - this.startTime;
-		if(!minicanvas_MiniCanvas.displayGenerationTime) haxe_Log.trace("generated \"" + name + "\" in " + thx_core_Floats.roundTo(this.deltaTime,2) + "ms",{ fileName : "MiniCanvas.hx", lineNumber : 52, className : "minicanvas.MiniCanvas", methodName : "display"});
+		if(!minicanvas_MiniCanvas.displayGenerationTime) console.log("generated \"" + name + "\" in " + thx_core_Floats.roundTo(this.deltaTime,2) + "ms");
 		this.nativeDisplay(name);
 		return this;
 	}

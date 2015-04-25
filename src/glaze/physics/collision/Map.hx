@@ -53,6 +53,10 @@ class Map
                 tilePosition.y = (y*tileSize)+tileHalfSize;
                 var cell = data.get(x,y,0);
                 if (cell>0) {
+
+                    // if (Intersect.StaticAABBvsSweeptAABB(tilePosition,tileExtents,body.position,body.aabb.extents,body.velocity,contact)==false)
+                    //      continue;
+
                     if (Intersect.AABBvsStaticSolidAABB(body.position,body.aabb.extents,tilePosition,tileExtents,contact)==true) {
                         var nextX:Int = x + Std.int(contact.normal.x);
                         var nextY:Int = y + Std.int(contact.normal.y);
@@ -61,6 +65,7 @@ class Map
                             body.respondStaticCollision(contact);
                             if (debug!=null)
                                 debug(x,y);
+                        } else {
                         }
                     }
                 }
@@ -196,34 +201,31 @@ class Map
         var cY = y*tileSize;
         var d = ray.direction;
 
-        var stepX:Int ,tMaxX:Float, tDeltaX:Float;
+        var stepX:Int       = 0;
+        var tMaxX:Float     = 100000000;
+        var tDeltaX:Float   = 0;
         if (d.x < 0) {
             stepX = -1;
             tMaxX = (cX - ray.origin.x) / d.x;
             tDeltaX = tileSize / -d.x;
-        } else if (0 < d.x) {
+        } else if (d.x > 0) {
             stepX = 1;
             tMaxX = ((cX + tileSize) - ray.origin.x) / d.x;
             tDeltaX = tileSize / d.x;
-        } else {
-            stepX = 0;
-            tMaxX = 100000000;
-            tDeltaX = 0;
-        }
-        var stepY:Int, tMaxY:Float, tDeltaY:Float;
+        } 
+
+        var stepY:Int       = 0; 
+        var tMaxY:Float     = 100000000;
+        var tDeltaY:Float   = 0;
         if (d.y < 0) {
             stepY = -1;
             tMaxY = (cY - ray.origin.y) / d.y;
             tDeltaY = tileSize / -d.y;
-        } else if (0 < d.y) {
+        } else if (d.y > 0) {
             stepY = 1;
             tMaxY = ((cY + tileSize) - ray.origin.y) / d.y;
             tDeltaY = tileSize / d.y;
-        } else {
-            stepY = 0;
-            tMaxY = 100000000;
-            tDeltaY = 0;
-        }
+        } 
 
         var pX = ray.origin.x;
         var pY = ray.origin.y;

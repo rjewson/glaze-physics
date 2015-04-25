@@ -224,6 +224,11 @@ class Intersect
         var pdy = aabb_position_A.y - pcy;
 
         contact.distance = pdx*contact.normal.x + pdy*contact.normal.y;
+        //trace(contact.distance);
+        //return (Dot(p.n, q) - p.d) / Dot(p.n, p.n);
+        // var d = aabb_position_A.y + aabb_extents_A.y + aabb_extents_B.y;
+        //contact.distance = (contact.normal.dot(aabb_position_B) - d) / contact.normal.dot(contact.normal);
+        // contact.distance = aabb_position_A.y + aabb_extents_A.y + aabb_extents_B.y - aabb_position_B.y;
 
         return true;
     }

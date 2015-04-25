@@ -28,6 +28,8 @@ class Body
     public var mass:Float = 1;
     public var invMass:Float = 1;
 
+    public var bullet:Bool = false;
+
     public var dt:Float = 0;
 
     public var onGround:Bool = false;
@@ -50,7 +52,6 @@ class Body
     public function update(dt:Float,globalForces:Vector2,globalDamping:Float) {
         this.dt = dt;
         forces.plusEquals(globalForces);
-        // forces.plusEquals(collisionForce);
         velocity.plusEquals(forces);
         velocity.multEquals(globalDamping*damping);
         velocity.clamp(maxScalarVelocity);
@@ -80,10 +81,12 @@ class Body
             //Cancel normal vel
             velocity.x -= contact.normal.x * nv;
             velocity.y -= contact.normal.y * nv;
-if (debug>0) {
-    trace(contact.normal.y,nv,seperation,contact.distance);
-    debug--;
-}
+            
+            // if (debug>0) {
+            //     trace(contact.normal,seperation,penetration,contact.distance);
+            //     debug--;
+            // }
+
             //Surface is updwards?
             if (contact.normal.y < 0) {
                 onGround = true;
@@ -94,12 +97,12 @@ if (debug>0) {
             }
 
             //reflect
-            if (bounceCount>0) {
-                //velocity.multEquals(0.95+Math.random()*0.05);
-                velocity.reflectEquals(contact.normal);
-                //addForce(new Vector2(contact.normal.x*500,contact.normal.y*500));
-                bounceCount--;
-            }
+            // if (bounceCount>0) {
+            //     //velocity.multEquals(0.95+Math.random()*0.05);
+            //     //velocity.reflectEquals(contact.normal);
+            //     // addForce(new Vector2(contact.normal.x*100,contact.normal.y*100));
+            //     bounceCount--;
+            // }
 
             return true;
         } 
@@ -107,11 +110,11 @@ if (debug>0) {
     }
 
     public function updatePosition() {
-        position.x += (velocity.x*dt) + (positionCorrection.x*dt);
-        position.y += (velocity.y*dt) + (positionCorrection.y*dt);
-        //positionCorrection.plusEquals(velocity);
-        //positionCorrection.multEquals(dt);
-        //position.plusEquals(positionCorrection);
+        // position.x += (velocity.x*dt) + (positionCorrection.x*dt);
+        // position.y += (velocity.y*dt) + (positionCorrection.y*dt);
+        positionCorrection.plusEquals(velocity);
+        positionCorrection.multEquals(dt);
+        position.plusEquals(positionCorrection);
         positionCorrection.setTo(0,0);
     }
 
