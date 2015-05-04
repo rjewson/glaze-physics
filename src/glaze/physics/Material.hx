@@ -11,7 +11,7 @@ class Material
     public var elasticity : Float;
     public var friction : Float;
 
-    public function new(density : Float = 1, elasticity : Float = 0.3, friction : Float = 0.0) {
+    public function new(density : Float = 1, elasticity : Float = 0.3, friction : Float = 0.1) {
         this.density = density;
         this.elasticity = elasticity;
         this.friction = friction;

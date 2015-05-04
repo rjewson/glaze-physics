@@ -10,7 +10,7 @@ import glaze.physics.collision.Ray;
 class Map 
 {
 
-    public static inline var CORRECTION:Float = .0;
+    public static inline var CORRECTION:Float = 0;
     public static inline var ROUNDUP:Float = .5;
 
     public var tileSize:Float;
@@ -48,7 +48,6 @@ class Map
 
         for (x in startX...endX) {
             for (y in startY...endY) {
-                //var y = endY - (yy-startY);
                 tilePosition.x = (x*tileSize)+tileHalfSize;
                 tilePosition.y = (y*tileSize)+tileHalfSize;
                 var cell = data.get(x,y,0);

@@ -4,6 +4,7 @@ import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Map;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Ray;
+import glaze.physics.Material;
 import js.Browser;
 import glaze.Engine;
 import glaze.geom.Vector2;
@@ -22,6 +23,7 @@ class Test1
 
     public var player:Body;
     public var ray:Ray;
+    public var mat1:Material;
 
     public var map:Map;
 
@@ -75,7 +77,10 @@ class Test1
     }
 
     public function customSetup() {
-        player = new Body(20,45);
+
+        mat1 = new Material();
+
+        player = new Body(20,45,mat1);
         player.position.setTo(200,200);
         engine.addBody(player);
 
@@ -90,7 +95,7 @@ class Test1
 
     public function cb(a:BFProxy,b:BFProxy,c:Contact) {
         var area = a.aabb.overlapArea(b.aabb);
-        b.body.damping = 0.9;
+        b.body.damping = 0.98;
         b.body.addForce(new Vector2(0,-area/200));
         //trace(area);
     }
@@ -119,9 +124,9 @@ class Test1
         if (left>0) inputVelocity.x  -= force;
         if (right>0) inputVelocity.x += force;
         if (up) {
-            if (player.onGround) {
+           // if (player.onGround) {
                 inputVelocity.y    -= force*50;
-            }
+            //   }
         }
         if (down>0) inputVelocity.y  += force;
         if (fire) fireBullet();
@@ -130,13 +135,16 @@ class Test1
     }
 
     public function fireBullet() {
-        var bullet = new Body(5,5);
+        var bullet = new Body(5,5,mat1);
+        bullet.setBounces(3);
         bullet.position.setTo(player.position.x,player.position.y);
+
         var vel = input.mousePosition.clone();
         vel.minusEquals(player.position);
         vel.normalize();
-        vel.multEquals(10000);
+        vel.multEquals(1500);
         bullet.velocity.setTo(vel.x,vel.y);
+
         engine.addBody(bullet);     
     }
 
@@ -190,7 +198,7 @@ class Test1
                 body.aabb.r,
                 body.aabb.b,
                 1,
-                body.onGround ? "rgba(255,0,0,1)" : "rgba(0,0,255,1)"               
+                body.onGround ? 0xFF0000FF : 0x0000FFFF           
             );
         }
 
@@ -201,7 +209,7 @@ class Test1
                 proxy.aabb.r,
                 proxy.aabb.b,
                 1,
-                "rgba(0,255,0,1)"                
+                0x00FF00FF                
             );
         }
 
@@ -214,7 +222,8 @@ class Test1
                 xp+cellSize,
                 yp+cellSize,
                 3,
-                '#ff0000'
+                0xFF0000FF
+                
                 );             
         }
 

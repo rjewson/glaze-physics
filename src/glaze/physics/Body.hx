@@ -15,10 +15,17 @@ class Body
     public var predictedPosition:Vector2 = new Vector2();
 
     public var velocity:Vector2 = new Vector2();
-    public var maxScalarVelocity:Float = 1000;
+    public var originalVelocity:Vector2 = new Vector2();
+
+    public var lastNormal:Vector2 = new Vector2();
+
+    public var stepContactCount:Int = 0;
+
+    public var maxScalarVelocity:Float = 10000;
 
     public var aabb:AABB = new AABB();
     public var bfproxy:BFProxy = new BFProxy();
+    public var material:Material;
 
     public var forces:Vector2 = new Vector2();
     private var accumulatedForces:Vector2 = new Vector2();
@@ -35,12 +42,15 @@ class Body
     public var onGround:Bool = false;
     public var onGroundPrev:Bool = false;
 
-    public var bounceCount:Int = 4;
+    public var totalBounceCount:Int = 0;
+    public var bounceCount:Int = 0;
+    public var canBounce(get, null):Bool;
 
-    public var debug:Int = 1;
+    public var debug:Int = 0;    
 
-    public function new(w:Float,h:Float) {
+    public function new(w:Float,h:Float,material:Material) {
         aabb.extents.setTo(w,h);
+        this.material = material;
         aabb.position = this.position;
         setMass(1);
 
@@ -55,6 +65,7 @@ class Body
         velocity.plusEquals(forces);
         velocity.multEquals(globalDamping*damping);
         velocity.clamp(maxScalarVelocity);
+        originalVelocity.copy(velocity);
 
         predictedPosition.copy(position);
         predictedPosition.plusMultEquals(velocity,dt);
@@ -64,6 +75,7 @@ class Body
 
         onGroundPrev = onGround;
         onGround = false;
+        stepContactCount = 0;
     }
 
     public function respondStaticCollision(contact:Contact):Bool {
@@ -76,7 +88,7 @@ class Body
         var nv = velocity.dot(contact.normal) + (seperation/dt);
 
         if (nv<0) {
-            //TODO different responses required
+            stepContactCount++;
 
             //Cancel normal vel
             velocity.x -= contact.normal.x * nv;
@@ -87,22 +99,17 @@ class Body
             //     debug--;
             // }
 
-            //Surface is updwards?
-            if (contact.normal.y < 0) {
+            //Item doesnt bounce? Surface is updwards?
+            if (!canBounce && contact.normal.y < 0) {
                 onGround = true;
                 var tangent:Vector2 = contact.normal.rightHandNormal();
-                var tv:Float = velocity.dot(tangent) * 0.1;
+                var tv:Float = velocity.dot(tangent) * material.friction;
                 velocity.x -= tangent.x * tv;
                 velocity.y -= tangent.y * tv;
             }
 
-            //reflect
-            // if (bounceCount>0) {
-            //     //velocity.multEquals(0.95+Math.random()*0.05);
-            //     //velocity.reflectEquals(contact.normal);
-            //     // addForce(new Vector2(contact.normal.x*100,contact.normal.y*100));
-            //     bounceCount--;
-            // }
+            //store contact normal for later reflection
+            lastNormal.copy(contact.normal);
 
             return true;
         } 
@@ -116,6 +123,17 @@ class Body
         positionCorrection.multEquals(dt);
         position.plusEquals(positionCorrection);
         positionCorrection.setTo(0,0);
+
+        //Anything hit? Any bounces left?
+        if (stepContactCount>0 && canBounce) {
+            //Reflect it...
+            originalVelocity.reflectEquals(lastNormal);
+            //Fixme
+            originalVelocity.multEquals(material.elasticity);
+            velocity.copy(originalVelocity);
+            bounceCount++;
+        }
+
     }
 
     public function addForce(f:Vector2) {
@@ -129,6 +147,15 @@ class Body
     function setMass(mass) {
         this.mass = mass;
         this.invMass = 1/mass;
+    }
+
+    public function setBounces(count:Int) {
+        totalBounceCount = count;
+        bounceCount = 0; 
+    }
+
+    inline function get_canBounce():Bool {
+        return bounceCount!=totalBounceCount;
     }
 
 }

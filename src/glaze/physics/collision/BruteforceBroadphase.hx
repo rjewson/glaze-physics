@@ -39,10 +39,10 @@ class BruteforceBroadphase
                 nf.Collide(dynamicProxy,staticProxy);
             }
 
-            for (j in i+1...count) {
-                var dynamicProxyB = dynamicProxies[j];
-                nf.Collide(dynamicProxy,dynamicProxyB);
-            }
+            // for (j in i+1...count) {
+            //     var dynamicProxyB = dynamicProxies[j];
+            //     nf.Collide(dynamicProxy,dynamicProxyB);
+            // }
 
         }
     }

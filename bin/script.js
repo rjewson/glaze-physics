@@ -218,7 +218,8 @@ demo_Test1.prototype = {
 		this.customSetup();
 	}
 	,customSetup: function() {
-		this.player = new glaze_physics_Body(20,45);
+		this.mat1 = new glaze_physics_Material();
+		this.player = new glaze_physics_Body(20,45,this.mat1);
 		this.player.position.setTo(200,200);
 		this.engine.addBody(this.player);
 		var box = glaze_physics_collision_BFProxy.CreateStaticFeature(464,544,144,64);
@@ -229,7 +230,7 @@ demo_Test1.prototype = {
 	}
 	,cb: function(a,b,c) {
 		var area = a.aabb.overlapArea(b.aabb);
-		b.body.damping = 0.9;
+		b.body.damping = 0.98;
 		b.body.addForce(new glaze_geom_Vector2(0,-area / 200));
 	}
 	,update: function(delta) {
@@ -252,21 +253,20 @@ demo_Test1.prototype = {
 		var ray = this.input.keyMap[82] > 0;
 		if(left > 0) inputVelocity.x -= force;
 		if(right > 0) inputVelocity.x += force;
-		if(up) {
-			if(this.player.onGround) inputVelocity.y -= force * 50;
-		}
+		if(up) inputVelocity.y -= force * 50;
 		if(down > 0) inputVelocity.y += force;
 		if(fire) this.fireBullet();
 		if(ray) this.shootRay();
 		this.player.addForce(inputVelocity);
 	}
 	,fireBullet: function() {
-		var bullet = new glaze_physics_Body(5,5);
+		var bullet = new glaze_physics_Body(5,5,this.mat1);
+		bullet.setBounces(3);
 		bullet.position.setTo(this.player.position.x,this.player.position.y);
 		var vel = this.input.mousePosition.clone();
 		vel.minusEquals(this.player.position);
 		vel.normalize();
-		vel.multEquals(10000);
+		vel.multEquals(1500);
 		bullet.velocity.setTo(vel.x,vel.y);
 		this.engine.addBody(bullet);
 	}
@@ -307,14 +307,14 @@ demo_Test1.prototype = {
 		while(_g4 < _g11.length) {
 			var body = _g11[_g4];
 			++_g4;
-			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(255,0,0,1)"):thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,0,255,1)"));
+			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?-16776961:65535);
 		}
 		var _g5 = 0;
 		var _g12 = this.engine.broadphase.staticProxies;
 		while(_g5 < _g12.length) {
 			var proxy = _g12[_g5];
 			++_g5;
-			this.canvas.rect(proxy.aabb.get_l(),proxy.aabb.get_t(),proxy.aabb.get_r(),proxy.aabb.get_b(),1,thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,255,0,1)"));
+			this.canvas.rect(proxy.aabb.get_l(),proxy.aabb.get_t(),proxy.aabb.get_r(),proxy.aabb.get_b(),1,16711935);
 		}
 		var _g13 = 0;
 		var _g6 = this.debugGridItemsCount;
@@ -322,7 +322,7 @@ demo_Test1.prototype = {
 			var i = _g13++;
 			var xp1 = this.debugGridItems[i * 2] * cellSize;
 			var yp1 = this.debugGridItems[i * 2 + 1] * cellSize;
-			this.canvas.rect(xp1,yp1,xp1 + cellSize,yp1 + cellSize,3,thx_color__$RGBA_RGBA_$Impl_$.fromString("#ff0000"));
+			this.canvas.rect(xp1,yp1,xp1 + cellSize,yp1 + cellSize,3,-16776961);
 		}
 		if(this.ray.hit) this.canvas.line(this.ray.origin.x,this.ray.origin.y,this.ray.position.x,this.ray.position.y,1,thx_color__$RGBA_RGBA_$Impl_$.fromString("#00ff00"));
 	}
@@ -335,7 +335,7 @@ var glaze_Engine = function(map) {
 	this.nf = new glaze_physics_collision_Intersect();
 	this.broadphase = new glaze_physics_collision_BruteforceBroadphase(map,this.nf);
 	this.contact = new glaze_physics_collision_Contact();
-	this.globalForce = new glaze_geom_Vector2(0,9);
+	this.globalForce = new glaze_geom_Vector2(0,10);
 };
 glaze_Engine.__name__ = true;
 glaze_Engine.prototype = {
@@ -518,9 +518,10 @@ glaze_geom_Vector2.prototype = {
 	}
 	,__class__: glaze_geom_Vector2
 };
-var glaze_physics_Body = function(w,h) {
-	this.debug = 1;
-	this.bounceCount = 4;
+var glaze_physics_Body = function(w,h,material) {
+	this.debug = 0;
+	this.bounceCount = 0;
+	this.totalBounceCount = 0;
 	this.onGroundPrev = false;
 	this.onGround = false;
 	this.dt = 0;
@@ -532,12 +533,16 @@ var glaze_physics_Body = function(w,h) {
 	this.forces = new glaze_geom_Vector2();
 	this.bfproxy = new glaze_physics_collision_BFProxy();
 	this.aabb = new glaze_geom_AABB();
-	this.maxScalarVelocity = 1000;
+	this.maxScalarVelocity = 10000;
+	this.stepContactCount = 0;
+	this.lastNormal = new glaze_geom_Vector2();
+	this.originalVelocity = new glaze_geom_Vector2();
 	this.velocity = new glaze_geom_Vector2();
 	this.predictedPosition = new glaze_geom_Vector2();
 	this.positionCorrection = new glaze_geom_Vector2();
 	this.position = new glaze_geom_Vector2();
 	this.aabb.extents.setTo(w,h);
+	this.material = material;
 	this.aabb.position = this.position;
 	this.setMass(1);
 	this.bfproxy.body = this;
@@ -552,12 +557,14 @@ glaze_physics_Body.prototype = {
 		this.velocity.plusEquals(this.forces);
 		this.velocity.multEquals(globalDamping * this.damping);
 		this.velocity.clamp(this.maxScalarVelocity);
+		this.originalVelocity.copy(this.velocity);
 		this.predictedPosition.copy(this.position);
 		this.predictedPosition.plusMultEquals(this.velocity,dt);
 		this.forces.setTo(0,0);
 		this.damping = 1;
 		this.onGroundPrev = this.onGround;
 		this.onGround = false;
+		this.stepContactCount = 0;
 	}
 	,respondStaticCollision: function(contact) {
 		var seperation = Math.max(contact.distance,0);
@@ -566,15 +573,17 @@ glaze_physics_Body.prototype = {
 		this.positionCorrection.y -= contact.normal.y * (penetration / this.dt);
 		var nv = this.velocity.dot(contact.normal) + seperation / this.dt;
 		if(nv < 0) {
+			this.stepContactCount++;
 			this.velocity.x -= contact.normal.x * nv;
 			this.velocity.y -= contact.normal.y * nv;
-			if(contact.normal.y < 0) {
+			if(!(this.bounceCount != this.totalBounceCount) && contact.normal.y < 0) {
 				this.onGround = true;
 				var tangent = contact.normal.rightHandNormal();
-				var tv = this.velocity.dot(tangent) * 0.1;
+				var tv = this.velocity.dot(tangent) * this.material.friction;
 				this.velocity.x -= tangent.x * tv;
 				this.velocity.y -= tangent.y * tv;
 			}
+			this.lastNormal.copy(contact.normal);
 			return true;
 		}
 		return false;
@@ -584,6 +593,12 @@ glaze_physics_Body.prototype = {
 		this.positionCorrection.multEquals(this.dt);
 		this.position.plusEquals(this.positionCorrection);
 		this.positionCorrection.setTo(0,0);
+		if(this.stepContactCount > 0 && this.bounceCount != this.totalBounceCount) {
+			this.originalVelocity.reflectEquals(this.lastNormal);
+			this.originalVelocity.multEquals(this.material.elasticity);
+			this.velocity.copy(this.originalVelocity);
+			this.bounceCount++;
+		}
 	}
 	,addForce: function(f) {
 		this.forces.plusMultEquals(f,this.invMass);
@@ -595,10 +610,17 @@ glaze_physics_Body.prototype = {
 		this.mass = mass;
 		this.invMass = 1 / mass;
 	}
+	,setBounces: function(count) {
+		this.totalBounceCount = count;
+		this.bounceCount = 0;
+	}
+	,get_canBounce: function() {
+		return this.bounceCount != this.totalBounceCount;
+	}
 	,__class__: glaze_physics_Body
 };
 var glaze_physics_Material = function(density,elasticity,friction) {
-	if(friction == null) friction = 0.0;
+	if(friction == null) friction = 0.1;
 	if(elasticity == null) elasticity = 0.3;
 	if(density == null) density = 1;
 	this.density = density;
@@ -653,12 +675,6 @@ glaze_physics_collision_BruteforceBroadphase.prototype = {
 				++_g1;
 				this.nf.Collide(dynamicProxy,staticProxy);
 			}
-			var _g11 = i + 1;
-			while(_g11 < count) {
-				var j = _g11++;
-				var dynamicProxyB = this.dynamicProxies[j];
-				this.nf.Collide(dynamicProxy,dynamicProxyB);
-			}
 		}
 	}
 	,Search: function(position,radius,result) {
@@ -697,6 +713,13 @@ var glaze_physics_collision_Filter = function() {
 	this.categoryBits = 1;
 };
 glaze_physics_collision_Filter.__name__ = true;
+glaze_physics_collision_Filter.check = function(filterA,filterB) {
+	if(filterA.groupIndex > 0 && filterB.groupIndex > 0 && filterA.groupIndex == filterB.groupIndex) return false; else {
+		if((filterA.maskBits & filterB.categoryBits) == 0) return false;
+		if((filterA.categoryBits & filterB.maskBits) == 0) return false;
+	}
+	return true;
+};
 glaze_physics_collision_Filter.prototype = {
 	__class__: glaze_physics_collision_Filter
 };
@@ -6468,7 +6491,7 @@ if(typeof(scope.performance.now) == "undefined") {
 }
 glaze_geom_Vector2.ZERO_TOLERANCE = 1e-08;
 glaze_physics_collision_Intersect.epsilon = 1e-8;
-glaze_physics_collision_Map.CORRECTION = .0;
+glaze_physics_collision_Map.CORRECTION = 0;
 glaze_physics_collision_Map.ROUNDUP = .5;
 haxe_crypto_Base64.CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 haxe_crypto_Base64.BYTES = haxe_io_Bytes.ofString(haxe_crypto_Base64.CHARS);

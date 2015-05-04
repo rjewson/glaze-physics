@@ -34,7 +34,7 @@ class Engine
         broadphase = new BruteforceBroadphase(map,nf);
 
         contact = new Contact();
-        globalForce = new Vector2(0,9); 
+        globalForce = new Vector2(0,10); 
     }
 
     public function update(delta:Float) {

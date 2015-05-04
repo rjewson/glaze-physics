@@ -11,4 +11,15 @@ class Filter
     public function new() {   
     }
 
+    public static inline function check(filterA:Filter,filterB:Filter):Bool {
+        if ((filterA.groupIndex > 0 && filterB.groupIndex > 0 && filterA.groupIndex == filterB.groupIndex)) {
+            return false; 
+        } else {
+            if ((filterA.maskBits & filterB.categoryBits) == 0) return false;
+            if ((filterA.categoryBits & filterB.maskBits) == 0) return false;         
+        }        
+        return true;
+    }
+
+
 }
