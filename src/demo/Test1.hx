@@ -5,6 +5,7 @@ import glaze.physics.collision.Map;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Ray;
 import glaze.physics.Material;
+import glaze.util.CharacterController;
 import js.Browser;
 import glaze.Engine;
 import glaze.geom.Vector2;
@@ -24,6 +25,8 @@ class Test1
     public var player:Body;
     public var ray:Ray;
     public var mat1:Material;
+
+    public var characterController:CharacterController;
 
     public var map:Map;
 
@@ -49,9 +52,6 @@ class Test1
         var result:Bool;
 
         result = glaze.physics.collision.Intersect.StaticAABBvsSweeptAABB(pos1,extents1,pos2,extents2,delta2,contact);
-        // trace("Test A");
-        // trace(result);
-        // trace(contact);
     }
 
     public function setup() {
@@ -84,20 +84,26 @@ class Test1
         player.position.setTo(200,200);
         engine.addBody(player);
 
+        characterController = new CharacterController(input,player);
+
+        var box = new Body(10,10,mat1);
+        box.position.setTo(150,200);
+        box.isBullet = true;
+        engine.addBody(box);
+
         //10,17 water center
-        var box = BFProxy.CreateStaticFeature(464,544,144,64);
-        box.contactCallback = cb;
-        box.isSensor = true;
-        engine.broadphase.addProxy(box);
+        var water = BFProxy.CreateStaticFeature(464,544,144,64);
+        water.contactCallback = cb;
+        water.isSensor = true;
+        engine.broadphase.addProxy(water);
         
         ray = new Ray();
     }
 
     public function cb(a:BFProxy,b:BFProxy,c:Contact) {
         var area = a.aabb.overlapArea(b.aabb);
-        b.body.damping = 0.98;
-        b.body.addForce(new Vector2(0,-area/200));
-        //trace(area);
+        b.body.damping = 0.95;
+        b.body.addForce(new Vector2(0,-area/100));
     }
 
     public function update(delta:Float) {
@@ -112,32 +118,23 @@ class Test1
     }
 
     public function processInput() {
-        var inputVelocity = new Vector2();
-        var force = 10;
-        var left = input.PressedDuration(65);   //a
-        var right = input.PressedDuration(68);  //d
-        var up = input.JustPressed(87);     //w
-        var down = input.PressedDuration(83);   //s
-        var fire = input.Pressed(32);
 
+        characterController.update();
+        
+        var fire = input.Pressed(32);
         var ray = input.Pressed(82);
-        if (left>0) inputVelocity.x  -= force;
-        if (right>0) inputVelocity.x += force;
-        if (up) {
-           // if (player.onGround) {
-                inputVelocity.y    -= force*50;
-            //   }
-        }
-        if (down>0) inputVelocity.y  += force;
+        
         if (fire) fireBullet();
         if (ray) shootRay();
-        player.addForce(inputVelocity);
+
     }
 
     public function fireBullet() {
         var bullet = new Body(5,5,mat1);
+        bullet.setMass(0.08);
         bullet.setBounces(3);
         bullet.position.setTo(player.position.x,player.position.y);
+        bullet.isBullet = true;
 
         var vel = input.mousePosition.clone();
         vel.minusEquals(player.position);
@@ -149,12 +146,15 @@ class Test1
     }
 
     public function shootRay() {
-        // var target = player.position.clone();
-        // target.x-=1;
-        // target.y-=1;
-        ray.initalize(player.position, input.mousePosition, 1000 );
-        map.castRay(ray);
+        ray.initalize(player.position, input.mousePosition, 1000 , rayTest );
+        engine.broadphase.CastRay(ray,null,true,false);
+        //map.castRay(ray);
     }
+
+    function rayTest(proxy:BFProxy):Int {
+        return (proxy.body!=null&&proxy.body==player) ? -1 : 0;
+    }
+
 
     public function debugRender() {
 
@@ -192,14 +192,18 @@ class Test1
         }
 
         for (body in engine.dynamicBodies) {
-            canvas.rect(
-                body.aabb.l,
-                body.aabb.t,
-                body.aabb.r,
-                body.aabb.b,
-                1,
-                body.onGround ? 0xFF0000FF : 0x0000FFFF           
-            );
+                canvas.rect(
+                    body.aabb.l,
+                    body.aabb.t,
+                    body.aabb.r,
+                    body.aabb.b,
+                    1,
+                    body.onGround ? 0xFF00FFFF : 0x0000FFFF           
+                );
+            if (body.isBullet) {
+                //canvas.line(body.position.x,body.position.y,body.previousPosition.x,body.previousPosition.y,1, '#00ff00');
+            }
+
         }
 
         for (proxy in engine.broadphase.staticProxies) {
@@ -223,12 +227,11 @@ class Test1
                 yp+cellSize,
                 3,
                 0xFF0000FF
-                
                 );             
         }
 
         if (ray.hit) {
-            canvas.line(ray.origin.x,ray.origin.y,ray.position.x,ray.position.y,1, '#00ff00' );
+            canvas.line(ray.origin.x,ray.origin.y,ray.contact.position.x,ray.contact.position.y,1, '#00ff00' );
         }
     }
 

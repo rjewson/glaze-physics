@@ -36,7 +36,7 @@ class Intersect
                     proxyB.aabb.extents,
                     contact);
         } else {
-            //Were just let with static<>dynamic collisions
+            //Were just left with static<>dynamic collisions
             //Order them
             var staticProxy,dynamicProxy;
             if (proxyA.isStatic) {
@@ -66,6 +66,14 @@ class Intersect
         }
 
         return collided;
+    }
+
+    public function RayAABB(ray:Ray,proxy:BFProxy):Bool {
+        if (Intersect.StaticSegmentvsStaticAABB(proxy.aabb.position,proxy.aabb.extents,ray.origin,ray.delta,0,0,contact)) {
+            ray.report(contact.delta.x,contact.delta.y,contact.normal.x,contact.normal.y,proxy);
+            return true;
+        }
+        return false;
     }
 
     public function Spring(bodyA:Body,bodyB:Body,length:Float,k:Float) {

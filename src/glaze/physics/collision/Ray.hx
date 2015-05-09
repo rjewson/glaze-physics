@@ -2,6 +2,7 @@
 package glaze.physics.collision;
 
 import glaze.geom.Vector2;
+import glaze.physics.collision.Contact;
 
 class Ray 
 {
@@ -13,16 +14,17 @@ class Ray
     public var delta:Vector2 = new Vector2();
     public var direction:Vector2 = new Vector2();
 
-    public var position:Vector2 = new Vector2();
-    public var normal:Vector2 = new Vector2();
+    public var contact:Contact = new Contact();
 
     public var hit:Bool;
+
+    public var callback:BFProxy->Int;
 
     public function new() {
 
     }
 
-    public function initalize(origin:Vector2,target:Vector2,range:Float=0) {
+    public function initalize(origin:Vector2,target:Vector2,range:Float,callback:BFProxy->Int) {
         reset();
         this.origin.copy(origin);
         this.target.copy(target);
@@ -33,23 +35,44 @@ class Ray
         direction.copy(delta);
         direction.normalize();
 
-        if (range==0) {
+        if (range<=0) {
             this.range = delta.length();
         } else {
             this.range = range;
+            //scale the delta correctly now
+            delta.copy(direction);
+            delta.multEquals(range);
         }
+
+        this.callback = callback;
     }
 
     public function reset() {
-        position.setTo(0,0);
-        normal.setTo(0,0);
+        contact.distance = 9999999999;
         hit = false;
     }
 
-    public function report(pX:Float,pY:Float,nX:Float,nY:Float) {
-        position.setTo(pX,pY);
-        normal.setTo(nX,nY);
-        hit = true;
+    public function report(distX:Float,distY:Float,normalX:Float,normalY:Float,proxy:BFProxy=null) {
+        
+        if (callback!=null&&proxy!=null) {
+            if (callback(proxy)<0) {
+                trace('filtered');
+                //js.Lib.debug();
+                return;
+            }
+        }
+
+        var distSqrd = distX*distX+distY*distY;
+        if (distSqrd<contact.distance*contact.distance) {
+            contact.position.setTo(origin.x+distX,origin.y+distY);
+            contact.normal.setTo(normalX,normalY);
+            contact.distance = Math.sqrt(distSqrd);
+            hit = true;
+            trace('reg:',contact.position);
+        } else {
+            trace("out of range:",distSqrd,contact.distance*contact.distance);
+        }
+
     }
 
 }

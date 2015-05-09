@@ -10,7 +10,7 @@ import glaze.physics.collision.Ray;
 class Map 
 {
 
-    public static inline var CORRECTION:Float = 0;
+    public static inline var CORRECTION:Float = .0;
     public static inline var ROUNDUP:Float = .5;
 
     public var tileSize:Float;
@@ -194,6 +194,7 @@ class Map
     // var dist:Number = planeDelta.Dot( planeN );
 
     public function castRay(ray:Ray):Bool {
+
         var x = data.Index(ray.origin.x);
         var y = data.Index(ray.origin.y);
         var cX = x*tileSize;
@@ -226,39 +227,43 @@ class Map
             tDeltaY = tileSize / d.y;
         } 
 
-        var pX = ray.origin.x;
-        var pY = ray.origin.y;
+        var distX = .0;
+        var distY = .0;
 
         var transitionEdgeNormalX = 0;
         var transitionEdgeNormalY = 0;
 
         while (true) {
             if (tMaxX < tMaxY) {
-                transitionEdgeNormalX = (stepX < 0) ? 1 : -1;
-                transitionEdgeNormalY = 0;
-                pX = ray.origin.x + (tMaxX * d.x);
-                pY = ray.origin.y + (tMaxX * d.y);
+                //transitionEdgeNormalX = (stepX < 0) ? 1 : -1;
+                //transitionEdgeNormalY = 0;
+                distX = tMaxX * d.x;
+                distY = tMaxX * d.y;
                 tMaxX += tDeltaX;
                 x += stepX;
             } else {
-                transitionEdgeNormalX = 0;
-                transitionEdgeNormalY = (stepY < 0) ? 1 : 0;
-                pX = ray.origin.x + (tMaxY * d.x);
-                pY = ray.origin.y + (tMaxY * d.y);
+                //transitionEdgeNormalX = 0;
+                //transitionEdgeNormalY = (stepY < 0) ? 1 : -1;
+                distX = tMaxY * d.x;
+                distY = tMaxY * d.y;
                 tMaxY += tDeltaY;
                 y += stepY;
             }
 
-            var distX = pX - ray.origin.x;
-            var distY = pY - ray.origin.y;
-            var currentLen = distX * distX + distY * distY;
-            if (currentLen >= ray.range*ray.range)
+            if (distX*distX+distY*distY>ray.range*ray.range)
                 return false;
 
             var tile = data.get(x,y,0);
-
             if (tile>0) {
-                ray.report(pX,pY,transitionEdgeNormalX,transitionEdgeNormalY);
+                //trace(Math.sqrt(distX*distX+distY*distY));
+                if (tMaxX < tMaxY) {
+                    transitionEdgeNormalX = (stepX < 0) ? 1 : -1;
+                    transitionEdgeNormalY = 0;
+                } else {
+                    transitionEdgeNormalX = 0;
+                    transitionEdgeNormalY = (stepY < 0) ? 1 : -1;
+                }
+                ray.report(distX,distY,transitionEdgeNormalX,transitionEdgeNormalY);
                 return true;
             }
         }

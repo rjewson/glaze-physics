@@ -32,23 +32,62 @@ class BruteforceBroadphase
 
             var dynamicProxy = dynamicProxies[i];
 
+            //First test against map
             map.testCollision( dynamicProxy.body );
 
+            //Next test against all static proxies
             for (staticProxy in staticProxies) {
-                //test A<>static
                 nf.Collide(dynamicProxy,staticProxy);
             }
 
-            // for (j in i+1...count) {
-            //     var dynamicProxyB = dynamicProxies[j];
-            //     nf.Collide(dynamicProxy,dynamicProxyB);
-            // }
+            //Finally test against dynamic
+            for (j in i+1...count) {
+                var dynamicProxyB = dynamicProxies[j];
+                nf.Collide(dynamicProxy,dynamicProxyB);
+            }
 
         }
     }
 
-    public function Search(position:Vector2,radius:Float,result:Body->Float->Void):Void {
-        return null;
+    public function QueryArea(aabb:glaze.geom.AABB,result:BFProxy->Void,checkDynamic:Bool = true,checkStatic:Bool = true) {
+        
+        if (checkDynamic) {
+            for (proxy in staticProxies) {
+                if (!proxy.isSensor&&aabb.overlap(proxy.aabb)) 
+                    result(proxy);
+            }
+        }
+
+        if (checkStatic) {
+            for (proxy in dynamicProxies) {
+                if (!proxy.isSensor&&aabb.overlap(proxy.aabb))
+                    result(proxy);
+            }
+        }
+
+    }
+
+    public function CastRay(ray:Ray,result:BFProxy->Void,checkDynamic:Bool = true,checkStatic:Bool = true) {
+        trace('---');
+        map.castRay(ray);
+        trace(ray.contact.position);
+        if (checkDynamic) {
+            for (proxy in dynamicProxies) {
+                if (!proxy.isSensor) {
+                    //js.Lib.debug();
+                    trace('check');
+                    nf.RayAABB(ray,proxy);
+                }
+            }                    
+        }
+
+        if (checkStatic) {
+            for (proxy in staticProxies) {
+                if (!proxy.isSensor)
+                    nf.RayAABB(ray,proxy);
+            }                    
+        }
+
     }
 
 }

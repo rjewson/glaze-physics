@@ -13,6 +13,7 @@ class Body
     public var position:Vector2 = new Vector2();
     public var positionCorrection:Vector2 = new Vector2();
     public var predictedPosition:Vector2 = new Vector2();
+    public var previousPosition:Vector2 = new Vector2();
 
     public var velocity:Vector2 = new Vector2();
     public var originalVelocity:Vector2 = new Vector2();
@@ -30,12 +31,12 @@ class Body
     public var forces:Vector2 = new Vector2();
     private var accumulatedForces:Vector2 = new Vector2();
 
+    public var isBullet:Bool = false;
+
     public var damping:Float = 1;
 
     public var mass:Float = 1;
     public var invMass:Float = 1;
-
-    public var bullet:Bool = false;
 
     public var dt:Float = 0;
 
@@ -61,6 +62,7 @@ class Body
 
     public function update(dt:Float,globalForces:Vector2,globalDamping:Float) {
         this.dt = dt;
+        //Add global forces to local ones
         forces.plusEquals(globalForces);
         velocity.plusEquals(forces);
         velocity.multEquals(globalDamping*damping);
@@ -69,6 +71,7 @@ class Body
 
         predictedPosition.copy(position);
         predictedPosition.plusMultEquals(velocity,dt);
+        previousPosition.copy(position);
 
         forces.setTo(0,0);
         damping = 1;
@@ -144,7 +147,7 @@ class Body
         forces.plusEquals(f);
     }
 
-    function setMass(mass) {
+    public function setMass(mass) {
         this.mass = mass;
         this.invMass = 1/mass;
     }

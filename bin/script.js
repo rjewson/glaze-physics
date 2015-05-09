@@ -222,16 +222,21 @@ demo_Test1.prototype = {
 		this.player = new glaze_physics_Body(20,45,this.mat1);
 		this.player.position.setTo(200,200);
 		this.engine.addBody(this.player);
-		var box = glaze_physics_collision_BFProxy.CreateStaticFeature(464,544,144,64);
-		box.contactCallback = $bind(this,this.cb);
-		box.isSensor = true;
-		this.engine.broadphase.addProxy(box);
+		this.characterController = new glaze_util_CharacterController(this.input,this.player);
+		var box = new glaze_physics_Body(10,10,this.mat1);
+		box.position.setTo(150,200);
+		box.isBullet = true;
+		this.engine.addBody(box);
+		var water = glaze_physics_collision_BFProxy.CreateStaticFeature(464,544,144,64);
+		water.contactCallback = $bind(this,this.cb);
+		water.isSensor = true;
+		this.engine.broadphase.addProxy(water);
 		this.ray = new glaze_physics_collision_Ray();
 	}
 	,cb: function(a,b,c) {
 		var area = a.aabb.overlapArea(b.aabb);
-		b.body.damping = 0.98;
-		b.body.addForce(new glaze_geom_Vector2(0,-area / 200));
+		b.body.damping = 0.95;
+		b.body.addForce(new glaze_geom_Vector2(0,-area / 100));
 	}
 	,update: function(delta) {
 		this.debugGridItemsCount = 0;
@@ -243,26 +248,18 @@ demo_Test1.prototype = {
 		this.render();
 	}
 	,processInput: function() {
-		var inputVelocity = new glaze_geom_Vector2();
-		var force = 10;
-		var left = this.input.PressedDuration(65);
-		var right = this.input.PressedDuration(68);
-		var up = this.input.JustPressed(87);
-		var down = this.input.PressedDuration(83);
+		this.characterController.update();
 		var fire = this.input.keyMap[32] > 0;
 		var ray = this.input.keyMap[82] > 0;
-		if(left > 0) inputVelocity.x -= force;
-		if(right > 0) inputVelocity.x += force;
-		if(up) inputVelocity.y -= force * 50;
-		if(down > 0) inputVelocity.y += force;
 		if(fire) this.fireBullet();
 		if(ray) this.shootRay();
-		this.player.addForce(inputVelocity);
 	}
 	,fireBullet: function() {
 		var bullet = new glaze_physics_Body(5,5,this.mat1);
+		bullet.setMass(0.08);
 		bullet.setBounces(3);
 		bullet.position.setTo(this.player.position.x,this.player.position.y);
+		bullet.isBullet = true;
 		var vel = this.input.mousePosition.clone();
 		vel.minusEquals(this.player.position);
 		vel.normalize();
@@ -271,8 +268,11 @@ demo_Test1.prototype = {
 		this.engine.addBody(bullet);
 	}
 	,shootRay: function() {
-		this.ray.initalize(this.player.position,this.input.mousePosition,1000);
-		this.map.castRay(this.ray);
+		this.ray.initalize(this.player.position,this.input.mousePosition,1000,$bind(this,this.rayTest));
+		this.engine.broadphase.CastRay(this.ray,null,true,false);
+	}
+	,rayTest: function(proxy) {
+		if(proxy.body != null && proxy.body == this.player) return -1; else return 0;
 	}
 	,debugRender: function() {
 	}
@@ -307,7 +307,9 @@ demo_Test1.prototype = {
 		while(_g4 < _g11.length) {
 			var body = _g11[_g4];
 			++_g4;
-			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?-16776961:65535);
+			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?-16711681:65535);
+			if(body.isBullet) {
+			}
 		}
 		var _g5 = 0;
 		var _g12 = this.engine.broadphase.staticProxies;
@@ -324,7 +326,7 @@ demo_Test1.prototype = {
 			var yp1 = this.debugGridItems[i * 2 + 1] * cellSize;
 			this.canvas.rect(xp1,yp1,xp1 + cellSize,yp1 + cellSize,3,-16776961);
 		}
-		if(this.ray.hit) this.canvas.line(this.ray.origin.x,this.ray.origin.y,this.ray.position.x,this.ray.position.y,1,thx_color__$RGBA_RGBA_$Impl_$.fromString("#00ff00"));
+		if(this.ray.hit) this.canvas.line(this.ray.origin.x,this.ray.origin.y,this.ray.contact.position.x,this.ray.contact.position.y,1,thx_color__$RGBA_RGBA_$Impl_$.fromString("#00ff00"));
 	}
 	,__class__: demo_Test1
 };
@@ -335,7 +337,7 @@ var glaze_Engine = function(map) {
 	this.nf = new glaze_physics_collision_Intersect();
 	this.broadphase = new glaze_physics_collision_BruteforceBroadphase(map,this.nf);
 	this.contact = new glaze_physics_collision_Contact();
-	this.globalForce = new glaze_geom_Vector2(0,10);
+	this.globalForce = new glaze_geom_Vector2(0,20);
 };
 glaze_Engine.__name__ = true;
 glaze_Engine.prototype = {
@@ -351,7 +353,7 @@ glaze_Engine.prototype = {
 		while(_g < _g1.length) {
 			var body = _g1[_g];
 			++_g;
-			body.update(delta,this.globalForce,0.98);
+			body.update(delta,this.globalForce,0.99);
 		}
 	}
 	,collide: function(delta) {
@@ -423,6 +425,17 @@ glaze_geom_AABB.prototype = {
 	}
 	,get_b: function() {
 		return this.position.y + this.extents.y;
+	}
+	,overlap: function(aabb) {
+		if(Math.abs(this.position.x - aabb.position.x) > this.extents.x + aabb.extents.x) return false;
+		if(Math.abs(this.position.y - aabb.position.y) > this.extents.y + aabb.extents.y) return false;
+		return true;
+	}
+	,containsAABB: function(aabb) {
+		return false;
+	}
+	,containsPoint: function(point) {
+		return Math.abs(point.x - this.position.x) < this.extents.x && Math.abs(point.y - this.position.y) < this.extents.y;
 	}
 	,overlapArea: function(aabb) {
 		var _l = Math.max(this.position.x - this.extents.x,aabb.position.x - aabb.extents.x);
@@ -525,10 +538,10 @@ var glaze_physics_Body = function(w,h,material) {
 	this.onGroundPrev = false;
 	this.onGround = false;
 	this.dt = 0;
-	this.bullet = false;
 	this.invMass = 1;
 	this.mass = 1;
 	this.damping = 1;
+	this.isBullet = false;
 	this.accumulatedForces = new glaze_geom_Vector2();
 	this.forces = new glaze_geom_Vector2();
 	this.bfproxy = new glaze_physics_collision_BFProxy();
@@ -538,6 +551,7 @@ var glaze_physics_Body = function(w,h,material) {
 	this.lastNormal = new glaze_geom_Vector2();
 	this.originalVelocity = new glaze_geom_Vector2();
 	this.velocity = new glaze_geom_Vector2();
+	this.previousPosition = new glaze_geom_Vector2();
 	this.predictedPosition = new glaze_geom_Vector2();
 	this.positionCorrection = new glaze_geom_Vector2();
 	this.position = new glaze_geom_Vector2();
@@ -560,6 +574,7 @@ glaze_physics_Body.prototype = {
 		this.originalVelocity.copy(this.velocity);
 		this.predictedPosition.copy(this.position);
 		this.predictedPosition.plusMultEquals(this.velocity,dt);
+		this.previousPosition.copy(this.position);
 		this.forces.setTo(0,0);
 		this.damping = 1;
 		this.onGroundPrev = this.onGround;
@@ -675,11 +690,63 @@ glaze_physics_collision_BruteforceBroadphase.prototype = {
 				++_g1;
 				this.nf.Collide(dynamicProxy,staticProxy);
 			}
+			var _g11 = i + 1;
+			while(_g11 < count) {
+				var j = _g11++;
+				var dynamicProxyB = this.dynamicProxies[j];
+				this.nf.Collide(dynamicProxy,dynamicProxyB);
+			}
 		}
 	}
-	,Search: function(position,radius,result) {
-		null;
-		return;
+	,QueryArea: function(aabb,result,checkDynamic,checkStatic) {
+		if(checkStatic == null) checkStatic = true;
+		if(checkDynamic == null) checkDynamic = true;
+		if(checkDynamic) {
+			var _g = 0;
+			var _g1 = this.staticProxies;
+			while(_g < _g1.length) {
+				var proxy = _g1[_g];
+				++_g;
+				if(!proxy.isSensor && aabb.overlap(proxy.aabb)) result(proxy);
+			}
+		}
+		if(checkStatic) {
+			var _g2 = 0;
+			var _g11 = this.dynamicProxies;
+			while(_g2 < _g11.length) {
+				var proxy1 = _g11[_g2];
+				++_g2;
+				if(!proxy1.isSensor && aabb.overlap(proxy1.aabb)) result(proxy1);
+			}
+		}
+	}
+	,CastRay: function(ray,result,checkDynamic,checkStatic) {
+		if(checkStatic == null) checkStatic = true;
+		if(checkDynamic == null) checkDynamic = true;
+		haxe_Log.trace("---",{ fileName : "BruteforceBroadphase.hx", lineNumber : 71, className : "glaze.physics.collision.BruteforceBroadphase", methodName : "CastRay"});
+		this.map.castRay(ray);
+		haxe_Log.trace(ray.contact.position,{ fileName : "BruteforceBroadphase.hx", lineNumber : 73, className : "glaze.physics.collision.BruteforceBroadphase", methodName : "CastRay"});
+		if(checkDynamic) {
+			var _g = 0;
+			var _g1 = this.dynamicProxies;
+			while(_g < _g1.length) {
+				var proxy = _g1[_g];
+				++_g;
+				if(!proxy.isSensor) {
+					haxe_Log.trace("check",{ fileName : "BruteforceBroadphase.hx", lineNumber : 78, className : "glaze.physics.collision.BruteforceBroadphase", methodName : "CastRay"});
+					this.nf.RayAABB(ray,proxy);
+				}
+			}
+		}
+		if(checkStatic) {
+			var _g2 = 0;
+			var _g11 = this.staticProxies;
+			while(_g2 < _g11.length) {
+				var proxy1 = _g11[_g2];
+				++_g2;
+				if(!proxy1.isSensor) this.nf.RayAABB(ray,proxy1);
+			}
+		}
 	}
 	,__class__: glaze_physics_collision_BruteforceBroadphase
 };
@@ -851,6 +918,13 @@ glaze_physics_collision_Intersect.prototype = {
 		}
 		return collided;
 	}
+	,RayAABB: function(ray,proxy) {
+		if(glaze_physics_collision_Intersect.StaticSegmentvsStaticAABB(proxy.aabb.position,proxy.aabb.extents,ray.origin,ray.delta,0,0,this.contact)) {
+			ray.report(this.contact.delta.x,this.contact.delta.y,this.contact.normal.x,this.contact.normal.y,proxy);
+			return true;
+		}
+		return false;
+	}
 	,Spring: function(bodyA,bodyB,length,k) {
 		var dx = bodyA.position.x - bodyB.position.x;
 		var dy = bodyA.position.y - bodyB.position.y;
@@ -922,7 +996,7 @@ glaze_physics_collision_Map.prototype = {
 			if(dy < 0) contact.normal.y = 1; else contact.normal.y = -1;
 		}
 		if(aabb_position_A.y + aabb_extents_A.y < aabb_position_B.y + aabb_extents_B.y && aabb_position_A.x - aabb_extents_B.x > aabb_position_B.x - aabb_extents_B.x) {
-			console.log("a");
+			haxe_Log.trace("a",{ fileName : "Map.hx", lineNumber : 99, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
 			contact.normal.x = 0.707106781186547462;
 			contact.normal.y = -0.707106781186547462;
 			var cornerTile = new glaze_geom_Vector2(aabb_position_B.x - aabb_extents_B.x,aabb_position_B.y - aabb_extents_B.y);
@@ -931,7 +1005,7 @@ glaze_physics_collision_Map.prototype = {
 			contact.distance = (contact.normal.dot(cornerBody) - d) / contact.normal.dot(contact.normal);
 			return true;
 		} else {
-			console.log("b");
+			haxe_Log.trace("b",{ fileName : "Map.hx", lineNumber : 110, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
 			var pcx = contact.normal.x * (aabb_extents_A.x + aabb_extents_B.x) + aabb_position_B.x;
 			var pcy = contact.normal.y * (aabb_extents_A.y + aabb_extents_B.y) + aabb_position_B.y;
 			var pdx = aabb_position_A.x - pcx;
@@ -970,33 +1044,33 @@ glaze_physics_collision_Map.prototype = {
 			tMaxY = (cY + this.tileSize - ray.origin.y) / d.y;
 			tDeltaY = this.tileSize / d.y;
 		}
-		var pX = ray.origin.x;
-		var pY = ray.origin.y;
+		var distX = .0;
+		var distY = .0;
 		var transitionEdgeNormalX = 0;
 		var transitionEdgeNormalY = 0;
 		while(true) {
 			if(tMaxX < tMaxY) {
-				if(stepX < 0) transitionEdgeNormalX = 1; else transitionEdgeNormalX = -1;
-				transitionEdgeNormalY = 0;
-				pX = ray.origin.x + tMaxX * d.x;
-				pY = ray.origin.y + tMaxX * d.y;
+				distX = tMaxX * d.x;
+				distY = tMaxX * d.y;
 				tMaxX += tDeltaX;
 				x += stepX;
 			} else {
-				transitionEdgeNormalX = 0;
-				if(stepY < 0) transitionEdgeNormalY = 1; else transitionEdgeNormalY = 0;
-				pX = ray.origin.x + tMaxY * d.x;
-				pY = ray.origin.y + tMaxY * d.y;
+				distX = tMaxY * d.x;
+				distY = tMaxY * d.y;
 				tMaxY += tDeltaY;
 				y += stepY;
 			}
-			var distX = pX - ray.origin.x;
-			var distY = pY - ray.origin.y;
-			var currentLen = distX * distX + distY * distY;
-			if(currentLen >= ray.range * ray.range) return false;
+			if(distX * distX + distY * distY > ray.range * ray.range) return false;
 			var tile = this.data.get(x,y,0);
 			if(tile > 0) {
-				ray.report(pX,pY,transitionEdgeNormalX,transitionEdgeNormalY);
+				if(tMaxX < tMaxY) {
+					if(stepX < 0) transitionEdgeNormalX = 1; else transitionEdgeNormalX = -1;
+					transitionEdgeNormalY = 0;
+				} else {
+					transitionEdgeNormalX = 0;
+					if(stepY < 0) transitionEdgeNormalY = 1; else transitionEdgeNormalY = -1;
+				}
+				ray.report(distX,distY,transitionEdgeNormalX,transitionEdgeNormalY);
 				return true;
 			}
 		}
@@ -1005,8 +1079,7 @@ glaze_physics_collision_Map.prototype = {
 	,__class__: glaze_physics_collision_Map
 };
 var glaze_physics_collision_Ray = function() {
-	this.normal = new glaze_geom_Vector2();
-	this.position = new glaze_geom_Vector2();
+	this.contact = new glaze_physics_collision_Contact();
 	this.direction = new glaze_geom_Vector2();
 	this.delta = new glaze_geom_Vector2();
 	this.range = 0;
@@ -1015,8 +1088,7 @@ var glaze_physics_collision_Ray = function() {
 };
 glaze_physics_collision_Ray.__name__ = true;
 glaze_physics_collision_Ray.prototype = {
-	initalize: function(origin,target,range) {
-		if(range == null) range = 0;
+	initalize: function(origin,target,range,callback) {
 		this.reset();
 		this.origin.copy(origin);
 		this.target.copy(target);
@@ -1024,19 +1096,62 @@ glaze_physics_collision_Ray.prototype = {
 		this.delta.minusEquals(origin);
 		this.direction.copy(this.delta);
 		this.direction.normalize();
-		if(range == 0) this.range = this.delta.length(); else this.range = range;
+		if(range <= 0) this.range = this.delta.length(); else {
+			this.range = range;
+			this.delta.copy(this.direction);
+			this.delta.multEquals(range);
+		}
+		this.callback = callback;
 	}
 	,reset: function() {
-		this.position.setTo(0,0);
-		this.normal.setTo(0,0);
+		this.contact.distance = 9999999999;
 		this.hit = false;
 	}
-	,report: function(pX,pY,nX,nY) {
-		this.position.setTo(pX,pY);
-		this.normal.setTo(nX,nY);
-		this.hit = true;
+	,report: function(distX,distY,normalX,normalY,proxy) {
+		if(this.callback != null && proxy != null) {
+			if(this.callback(proxy) < 0) {
+				haxe_Log.trace("filtered",{ fileName : "Ray.hx", lineNumber : 59, className : "glaze.physics.collision.Ray", methodName : "report"});
+				return;
+			}
+		}
+		var distSqrd = distX * distX + distY * distY;
+		if(distSqrd < this.contact.distance * this.contact.distance) {
+			this.contact.position.setTo(this.origin.x + distX,this.origin.y + distY);
+			this.contact.normal.setTo(normalX,normalY);
+			this.contact.distance = Math.sqrt(distSqrd);
+			this.hit = true;
+			haxe_Log.trace("reg:",{ fileName : "Ray.hx", lineNumber : 71, className : "glaze.physics.collision.Ray", methodName : "report", customParams : [this.contact.position]});
+		} else haxe_Log.trace("out of range:",{ fileName : "Ray.hx", lineNumber : 73, className : "glaze.physics.collision.Ray", methodName : "report", customParams : [distSqrd,this.contact.distance * this.contact.distance]});
 	}
 	,__class__: glaze_physics_collision_Ray
+};
+var glaze_util_CharacterController = function(input,body) {
+	this.jumpUnit = new glaze_geom_Vector2();
+	this.controlForce = new glaze_geom_Vector2();
+	this.input = input;
+	this.body = body;
+};
+glaze_util_CharacterController.__name__ = true;
+glaze_util_CharacterController.prototype = {
+	update: function() {
+		this.controlForce.setTo(.0,.0);
+		var left = this.input.PressedDuration(65);
+		var right = this.input.PressedDuration(68);
+		var up = this.input.JustPressed(87);
+		var down = this.input.PressedDuration(83);
+		if(up) {
+		}
+		if(this.body.onGround && !this.body.onGroundPrev) {
+		}
+		if(this.body.onGround) {
+			if(left > 0) this.controlForce.x -= 20;
+			if(right > 0) this.controlForce.x += 20;
+			if(up) this.controlForce.y -= 800;
+		} else {
+		}
+		this.body.addForce(this.controlForce);
+	}
+	,__class__: glaze_util_CharacterController
 };
 var glaze_util_DigitalInput = function() {
 	this.keyMap = [];
@@ -1258,6 +1373,11 @@ var haxe__$Int64__$_$_$Int64 = function(high,low) {
 haxe__$Int64__$_$_$Int64.__name__ = true;
 haxe__$Int64__$_$_$Int64.prototype = {
 	__class__: haxe__$Int64__$_$_$Int64
+};
+var haxe_Log = function() { };
+haxe_Log.__name__ = true;
+haxe_Log.trace = function(v,infos) {
+	js_Boot.__trace(v,infos);
 };
 var haxe_crypto_Adler32 = function() {
 	this.a1 = 1;
@@ -2064,6 +2184,25 @@ js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
 });
 var js_Boot = function() { };
 js_Boot.__name__ = true;
+js_Boot.__unhtml = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+};
+js_Boot.__trace = function(v,i) {
+	var msg;
+	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
+	msg += js_Boot.__string_rec(v,"");
+	if(i != null && i.customParams != null) {
+		var _g = 0;
+		var _g1 = i.customParams;
+		while(_g < _g1.length) {
+			var v1 = _g1[_g];
+			++_g;
+			msg += "," + js_Boot.__string_rec(v1,"");
+		}
+	}
+	var d;
+	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js_Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
+};
 js_Boot.getClass = function(o) {
 	if((o instanceof Array) && o.__enum__ == null) return Array; else {
 		var cl = o.__class__;
@@ -2398,7 +2537,7 @@ minicanvas_MiniCanvas.create = function(width,height,scaleMode) {
 minicanvas_MiniCanvas.prototype = {
 	display: function(name) {
 		this.deltaTime = performance.now() - this.startTime;
-		if(!minicanvas_MiniCanvas.displayGenerationTime) console.log("generated \"" + name + "\" in " + thx_core_Floats.roundTo(this.deltaTime,2) + "ms");
+		if(!minicanvas_MiniCanvas.displayGenerationTime) haxe_Log.trace("generated \"" + name + "\" in " + thx_core_Floats.roundTo(this.deltaTime,2) + "ms",{ fileName : "MiniCanvas.hx", lineNumber : 52, className : "minicanvas.MiniCanvas", methodName : "display"});
 		this.nativeDisplay(name);
 		return this;
 	}
@@ -6491,8 +6630,10 @@ if(typeof(scope.performance.now) == "undefined") {
 }
 glaze_geom_Vector2.ZERO_TOLERANCE = 1e-08;
 glaze_physics_collision_Intersect.epsilon = 1e-8;
-glaze_physics_collision_Map.CORRECTION = 0;
+glaze_physics_collision_Map.CORRECTION = .0;
 glaze_physics_collision_Map.ROUNDUP = .5;
+glaze_util_CharacterController.WALK_FORCE = 20;
+glaze_util_CharacterController.JUMP_FORCE = 800;
 haxe_crypto_Base64.CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 haxe_crypto_Base64.BYTES = haxe_io_Bytes.ofString(haxe_crypto_Base64.CHARS);
 haxe_io_FPHelper.i64tmp = (function($this) {
