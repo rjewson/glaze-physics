@@ -221,6 +221,8 @@ demo_Test1.prototype = {
 		this.mat1 = new glaze_physics_Material();
 		this.player = new glaze_physics_Body(20,45,this.mat1);
 		this.player.position.setTo(200,200);
+		this.player.maxScalarVelocity = 0;
+		this.player.maxVelocity.setTo(160,1000);
 		this.engine.addBody(this.player);
 		this.characterController = new glaze_util_CharacterController(this.input,this.player);
 		var box = new glaze_physics_Body(10,10,this.mat1);
@@ -250,9 +252,11 @@ demo_Test1.prototype = {
 	,processInput: function() {
 		this.characterController.update();
 		var fire = this.input.keyMap[32] > 0;
+		var search = this.input.JustPressed(71);
 		var ray = this.input.keyMap[82] > 0;
 		if(fire) this.fireBullet();
 		if(ray) this.shootRay();
+		if(search) this.searchArea();
 	}
 	,fireBullet: function() {
 		var bullet = new glaze_physics_Body(5,5,this.mat1);
@@ -270,6 +274,16 @@ demo_Test1.prototype = {
 	,shootRay: function() {
 		this.ray.initalize(this.player.position,this.input.mousePosition,1000,$bind(this,this.rayTest));
 		this.engine.broadphase.CastRay(this.ray,null,true,false);
+	}
+	,searchArea: function() {
+		var area = new glaze_geom_AABB();
+		area.position.copy(this.player.position);
+		area.extents.setTo(100,100);
+		var count = 0;
+		this.engine.broadphase.QueryArea(area,function(bf) {
+			count++;
+		});
+		haxe_Log.trace("Found:" + count,{ fileName : "Test1.hx", lineNumber : 168, className : "demo.Test1", methodName : "searchArea"});
 	}
 	,rayTest: function(proxy) {
 		if(proxy.body != null && proxy.body == this.player) return -1; else return 0;
@@ -444,6 +458,12 @@ glaze_geom_AABB.prototype = {
 		var _b = Math.min(this.position.y + this.extents.y,aabb.position.y + aabb.extents.y);
 		return (_r - _l) * (_b - _t);
 	}
+	,clone: function(aabb) {
+		var aabb1 = new glaze_geom_AABB();
+		aabb1.position.copy(this.position);
+		aabb1.extents.copy(this.extents);
+		return aabb1;
+	}
 	,__class__: glaze_geom_AABB
 };
 var glaze_geom_BFBB = function() {
@@ -492,9 +512,13 @@ glaze_geom_Vector2.prototype = {
 	,length: function() {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
-	,clamp: function(max) {
+	,clampScalar: function(max) {
 		var l = this.length();
 		if(l > max) this.multEquals(max / l);
+	}
+	,clampVector: function(v) {
+		this.x = Math.min(Math.max(this.x,-v.x),v.x);
+		this.y = Math.min(Math.max(this.y,-v.y),v.y);
 	}
 	,plusEquals: function(v) {
 		this.x += v.x;
@@ -546,7 +570,8 @@ var glaze_physics_Body = function(w,h,material) {
 	this.forces = new glaze_geom_Vector2();
 	this.bfproxy = new glaze_physics_collision_BFProxy();
 	this.aabb = new glaze_geom_AABB();
-	this.maxScalarVelocity = 10000;
+	this.maxVelocity = new glaze_geom_Vector2();
+	this.maxScalarVelocity = 1000;
 	this.stepContactCount = 0;
 	this.lastNormal = new glaze_geom_Vector2();
 	this.originalVelocity = new glaze_geom_Vector2();
@@ -570,7 +595,7 @@ glaze_physics_Body.prototype = {
 		this.forces.plusEquals(globalForces);
 		this.velocity.plusEquals(this.forces);
 		this.velocity.multEquals(globalDamping * this.damping);
-		this.velocity.clamp(this.maxScalarVelocity);
+		if(this.maxScalarVelocity > 0) this.velocity.clampScalar(this.maxScalarVelocity); else this.velocity.clampVector(this.maxVelocity);
 		this.originalVelocity.copy(this.velocity);
 		this.predictedPosition.copy(this.position);
 		this.predictedPosition.plusMultEquals(this.velocity,dt);
@@ -591,19 +616,20 @@ glaze_physics_Body.prototype = {
 			this.stepContactCount++;
 			this.velocity.x -= contact.normal.x * nv;
 			this.velocity.y -= contact.normal.y * nv;
-			if(!(this.bounceCount != this.totalBounceCount) && contact.normal.y < 0) {
-				this.onGround = true;
-				var tangent = contact.normal.rightHandNormal();
-				var tv = this.velocity.dot(tangent) * this.material.friction;
-				this.velocity.x -= tangent.x * tv;
-				this.velocity.y -= tangent.y * tv;
-			}
+			if(!(this.bounceCount != this.totalBounceCount) && contact.normal.y < 0) this.onGround = true;
 			this.lastNormal.copy(contact.normal);
 			return true;
 		}
 		return false;
 	}
 	,updatePosition: function() {
+		if(this.stepContactCount > 0 && !(this.bounceCount != this.totalBounceCount) && this.lastNormal.y < 0) {
+			this.onGround = true;
+			var tangent = this.lastNormal.rightHandNormal();
+			var tv = this.originalVelocity.dot(tangent) * this.material.friction;
+			this.velocity.x -= tangent.x * tv;
+			this.velocity.y -= tangent.y * tv;
+		}
 		this.positionCorrection.plusEquals(this.velocity);
 		this.positionCorrection.multEquals(this.dt);
 		this.position.plusEquals(this.positionCorrection);
@@ -723,19 +749,14 @@ glaze_physics_collision_BruteforceBroadphase.prototype = {
 	,CastRay: function(ray,result,checkDynamic,checkStatic) {
 		if(checkStatic == null) checkStatic = true;
 		if(checkDynamic == null) checkDynamic = true;
-		haxe_Log.trace("---",{ fileName : "BruteforceBroadphase.hx", lineNumber : 71, className : "glaze.physics.collision.BruteforceBroadphase", methodName : "CastRay"});
 		this.map.castRay(ray);
-		haxe_Log.trace(ray.contact.position,{ fileName : "BruteforceBroadphase.hx", lineNumber : 73, className : "glaze.physics.collision.BruteforceBroadphase", methodName : "CastRay"});
 		if(checkDynamic) {
 			var _g = 0;
 			var _g1 = this.dynamicProxies;
 			while(_g < _g1.length) {
 				var proxy = _g1[_g];
 				++_g;
-				if(!proxy.isSensor) {
-					haxe_Log.trace("check",{ fileName : "BruteforceBroadphase.hx", lineNumber : 78, className : "glaze.physics.collision.BruteforceBroadphase", methodName : "CastRay"});
-					this.nf.RayAABB(ray,proxy);
-				}
+				if(!proxy.isSensor) this.nf.RayAABB(ray,proxy);
 			}
 		}
 		if(checkStatic) {
@@ -1148,6 +1169,8 @@ glaze_util_CharacterController.prototype = {
 			if(right > 0) this.controlForce.x += 20;
 			if(up) this.controlForce.y -= 800;
 		} else {
+			if(left > 0) this.controlForce.x -= 10;
+			if(right > 0) this.controlForce.x += 10;
 		}
 		this.body.addForce(this.controlForce);
 	}
@@ -6633,7 +6656,9 @@ glaze_physics_collision_Intersect.epsilon = 1e-8;
 glaze_physics_collision_Map.CORRECTION = .0;
 glaze_physics_collision_Map.ROUNDUP = .5;
 glaze_util_CharacterController.WALK_FORCE = 20;
+glaze_util_CharacterController.AIR_CONTROL_FORCE = 10;
 glaze_util_CharacterController.JUMP_FORCE = 800;
+glaze_util_CharacterController.MAX_AIR_HORIZONTAL_VELOCITY = 500;
 haxe_crypto_Base64.CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 haxe_crypto_Base64.BYTES = haxe_io_Bytes.ofString(haxe_crypto_Base64.CHARS);
 haxe_io_FPHelper.i64tmp = (function($this) {

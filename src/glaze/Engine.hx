@@ -38,7 +38,6 @@ class Engine
     }
 
     public function update(delta:Float) {
-        //js.Lib.debug();
         var invDelta = delta/1000;
         preUpdate(invDelta);
         collide(invDelta);

@@ -39,11 +39,16 @@ class Vector2
         return Math.sqrt(x * x + y * y);
     }
 
-    public function clamp(max:Float) {
+    public function clampScalar(max:Float) {
         var l = length();
         if (l > max) {
             multEquals(max / l);
         }
+    }
+
+    public function clampVector(v:Vector2) {
+        this.x = Math.min(Math.max(x,-v.x),v.x);
+        this.y = Math.min(Math.max(y,-v.y),v.y);
     }
 
     public function plusEquals(v:Vector2):Void {

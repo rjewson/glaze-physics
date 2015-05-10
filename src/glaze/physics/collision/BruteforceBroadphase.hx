@@ -68,24 +68,17 @@ class BruteforceBroadphase
     }
 
     public function CastRay(ray:Ray,result:BFProxy->Void,checkDynamic:Bool = true,checkStatic:Bool = true) {
-        trace('---');
         map.castRay(ray);
-        trace(ray.contact.position);
         if (checkDynamic) {
-            for (proxy in dynamicProxies) {
-                if (!proxy.isSensor) {
-                    //js.Lib.debug();
-                    trace('check');
+            for (proxy in dynamicProxies)
+                if (!proxy.isSensor) 
                     nf.RayAABB(ray,proxy);
-                }
-            }                    
         }
 
         if (checkStatic) {
-            for (proxy in staticProxies) {
+            for (proxy in staticProxies)
                 if (!proxy.isSensor)
                     nf.RayAABB(ray,proxy);
-            }                    
         }
 
     }

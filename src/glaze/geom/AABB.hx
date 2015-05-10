@@ -45,4 +45,11 @@ class AABB
         return (_r-_l) * (_b-_t);
     }
 
+    public function clone(aabb:AABB):AABB {
+        var aabb = new AABB();
+        aabb.position.copy(position);
+        aabb.extents.copy(extents);
+        return aabb;
+    }
+
 }

@@ -22,7 +22,8 @@ class Body
 
     public var stepContactCount:Int = 0;
 
-    public var maxScalarVelocity:Float = 10000;
+    public var maxScalarVelocity:Float = 1000;
+    public var maxVelocity:Vector2 = new Vector2();
 
     public var aabb:AABB = new AABB();
     public var bfproxy:BFProxy = new BFProxy();
@@ -66,7 +67,14 @@ class Body
         forces.plusEquals(globalForces);
         velocity.plusEquals(forces);
         velocity.multEquals(globalDamping*damping);
-        velocity.clamp(maxScalarVelocity);
+
+        //Which velocity limiting type?
+        if (maxScalarVelocity>0) {
+            velocity.clampScalar(maxScalarVelocity);
+        } else {
+            velocity.clampVector(maxVelocity);
+        }
+
         originalVelocity.copy(velocity);
 
         predictedPosition.copy(position);
@@ -105,10 +113,11 @@ class Body
             //Item doesnt bounce? Surface is updwards?
             if (!canBounce && contact.normal.y < 0) {
                 onGround = true;
-                var tangent:Vector2 = contact.normal.rightHandNormal();
-                var tv:Float = velocity.dot(tangent) * material.friction;
-                velocity.x -= tangent.x * tv;
-                velocity.y -= tangent.y * tv;
+                //Apply Friction here?
+                // var tangent:Vector2 = contact.normal.rightHandNormal();
+                // var tv:Float = velocity.dot(tangent) * material.friction;
+                // velocity.x -= tangent.x * tv;
+                // velocity.y -= tangent.y * tv;
             }
 
             //store contact normal for later reflection
@@ -122,6 +131,16 @@ class Body
     public function updatePosition() {
         // position.x += (velocity.x*dt) + (positionCorrection.x*dt);
         // position.y += (velocity.y*dt) + (positionCorrection.y*dt);
+
+        //or apply Friction here?
+        if (stepContactCount>0 && !canBounce && lastNormal.y < 0) {
+            onGround = true;
+            var tangent:Vector2 = lastNormal.rightHandNormal();
+            var tv:Float = originalVelocity.dot(tangent) * material.friction;
+            velocity.x -= tangent.x * tv;
+            velocity.y -= tangent.y * tv;
+        }
+
         positionCorrection.plusEquals(velocity);
         positionCorrection.multEquals(dt);
         position.plusEquals(positionCorrection);

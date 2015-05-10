@@ -82,6 +82,8 @@ class Test1
 
         player = new Body(20,45,mat1);
         player.position.setTo(200,200);
+        player.maxScalarVelocity = 0;
+        player.maxVelocity.setTo(160,1000);
         engine.addBody(player);
 
         characterController = new CharacterController(input,player);
@@ -113,6 +115,7 @@ class Test1
         ray.hit=false;
         processInput();
         engine.update(delta);
+        // trace(player.velocity.x);
         debugRender();
         render();
     }
@@ -122,10 +125,12 @@ class Test1
         characterController.update();
         
         var fire = input.Pressed(32);
+        var search = input.JustPressed(71);
         var ray = input.Pressed(82);
         
         if (fire) fireBullet();
         if (ray) shootRay();
+        if (search) searchArea();
 
     }
 
@@ -148,7 +153,19 @@ class Test1
     public function shootRay() {
         ray.initalize(player.position, input.mousePosition, 1000 , rayTest );
         engine.broadphase.CastRay(ray,null,true,false);
-        //map.castRay(ray);
+    }
+
+    public function searchArea() {
+        var area = new glaze.geom.AABB();
+        area.position.copy(player.position);
+        area.extents.setTo(100,100);
+
+        var count = 0;
+        engine.broadphase.QueryArea(area,function(bf:BFProxy){
+                count++;
+            }
+        );
+        trace("Found:"+count);
     }
 
     function rayTest(proxy:BFProxy):Int {
