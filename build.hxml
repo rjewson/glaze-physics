@@ -3,4 +3,5 @@
 -lib minicanvas
 -main Main
 -debug
+#-D analyzer
 -cmd osascript bin/refreshTab

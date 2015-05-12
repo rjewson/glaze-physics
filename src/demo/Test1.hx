@@ -90,7 +90,6 @@ class Test1
 
         var box = new Body(10,10,mat1);
         box.position.setTo(150,200);
-        box.isBullet = true;
         engine.addBody(box);
 
         //10,17 water center
@@ -124,27 +123,30 @@ class Test1
 
         characterController.update();
         
-        var fire = input.Pressed(32);
+        var fire = input.JustPressed(32);
         var search = input.JustPressed(71);
+        var debug = input.Pressed(72);
         var ray = input.Pressed(82);
         
         if (fire) fireBullet();
         if (ray) shootRay();
         if (search) searchArea();
+        if (debug) fireBullet(20);
 
     }
 
-    public function fireBullet() {
+    public function fireBullet(debugCount:Int = 0) {
         var bullet = new Body(5,5,mat1);
-        bullet.setMass(0.08);
+        bullet.setMass(0.03);
         bullet.setBounces(3);
         bullet.position.setTo(player.position.x,player.position.y);
         bullet.isBullet = true;
+        bullet.debug = debugCount;
 
         var vel = input.mousePosition.clone();
         vel.minusEquals(player.position);
         vel.normalize();
-        vel.multEquals(1500);
+        vel.multEquals(50000);
         bullet.velocity.setTo(vel.x,vel.y);
 
         engine.addBody(bullet);     
@@ -209,17 +211,20 @@ class Test1
         }
 
         for (body in engine.dynamicBodies) {
-                canvas.rect(
-                    body.aabb.l,
-                    body.aabb.t,
-                    body.aabb.r,
-                    body.aabb.b,
-                    1,
-                    body.onGround ? 0xFF00FFFF : 0x0000FFFF           
-                );
+
             if (body.isBullet) {
-                //canvas.line(body.position.x,body.position.y,body.previousPosition.x,body.previousPosition.y,1, '#00ff00');
+                canvas.line(body.position.x,body.position.y,body.previousPosition.x,body.previousPosition.y,3, 0xFF00FFFF);
+                //continue;
             }
+
+            canvas.rect(
+                body.aabb.l,
+                body.aabb.t,
+                body.aabb.r,
+                body.aabb.b,
+                1,
+                body.onGround ? 0xFF00FFFF : 0x0000FFFF           
+            );
 
         }
 

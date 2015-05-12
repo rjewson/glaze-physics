@@ -14,7 +14,7 @@ class Vector2
         this.y = y;
     }    
 
-    inline public function setTo(x:Float,y:Float) {
+    inline public function setTo(x:Float,y:Float):Void {
         this.x = x;
         this.y = y;
     }

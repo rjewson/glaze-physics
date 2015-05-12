@@ -19,6 +19,7 @@ class Body
     public var originalVelocity:Vector2 = new Vector2();
 
     public var lastNormal:Vector2 = new Vector2();
+    public var toi:Float;
 
     public var stepContactCount:Int = 0;
 
@@ -69,10 +70,12 @@ class Body
         velocity.multEquals(globalDamping*damping);
 
         //Which velocity limiting type?
-        if (maxScalarVelocity>0) {
-            velocity.clampScalar(maxScalarVelocity);
-        } else {
-            velocity.clampVector(maxVelocity);
+        if (!isBullet) {
+            if (maxScalarVelocity>0) {
+                velocity.clampScalar(maxScalarVelocity);
+            } else {
+                velocity.clampVector(maxVelocity);
+            }            
         }
 
         originalVelocity.copy(velocity);
@@ -87,6 +90,8 @@ class Body
         onGroundPrev = onGround;
         onGround = false;
         stepContactCount = 0;
+
+        toi = Math.POSITIVE_INFINITY;
     }
 
     public function respondStaticCollision(contact:Contact):Bool {
@@ -104,11 +109,6 @@ class Body
             //Cancel normal vel
             velocity.x -= contact.normal.x * nv;
             velocity.y -= contact.normal.y * nv;
-            
-            // if (debug>0) {
-            //     trace(contact.normal,seperation,penetration,contact.distance);
-            //     debug--;
-            // }
 
             //Item doesnt bounce? Surface is updwards?
             if (!canBounce && contact.normal.y < 0) {
@@ -128,13 +128,45 @@ class Body
         return false;
     }
 
+    public function t(msg:String) {
+         if (debug>0) {
+            trace(msg);
+            debug--;
+        }
+    }
+
+    public function respondBulletCollision(contact:Contact):Bool {
+        //Record the closest time
+        if (contact.time<=toi) {
+            toi = contact.time;
+            positionCorrection.copy(contact.sweepPosition);
+            lastNormal.copy(contact.normal);
+            return true;
+        }
+        return false;
+    }
+
     public function updatePosition() {
-        // position.x += (velocity.x*dt) + (positionCorrection.x*dt);
-        // position.y += (velocity.y*dt) + (positionCorrection.y*dt);
+
+        //Its a bullet and it hit something?
+        if (isBullet) {
+            if (toi<Math.POSITIVE_INFINITY) {
+                position.copy(positionCorrection);
+                originalVelocity.reflectEquals(lastNormal);
+                //Fixme
+                originalVelocity.multEquals(material.elasticity);
+                velocity.copy(originalVelocity);
+            } else {
+                position.copy(predictedPosition);                
+            }
+            return;
+        }
+
+        //This body isnt a bullet so...
 
         //or apply Friction here?
         if (stepContactCount>0 && !canBounce && lastNormal.y < 0) {
-            onGround = true;
+            //onGround = true;
             var tangent:Vector2 = lastNormal.rightHandNormal();
             var tv:Float = originalVelocity.dot(tangent) * material.friction;
             velocity.x -= tangent.x * tv;
@@ -150,8 +182,9 @@ class Body
         if (stepContactCount>0 && canBounce) {
             //Reflect it...
             originalVelocity.reflectEquals(lastNormal);
-            //Fixme
+            //Remove velocity
             originalVelocity.multEquals(material.elasticity);
+            //Set the new velocity
             velocity.copy(originalVelocity);
             bounceCount++;
         }

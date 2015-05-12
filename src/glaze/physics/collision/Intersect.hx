@@ -13,7 +13,6 @@ class Intersect
     public var contact:Contact = new Contact();
 
     public function new() {
-        
     }
 
     public function Collide(proxyA:BFProxy,proxyB:BFProxy):Bool {
@@ -181,6 +180,7 @@ class Intersect
             }
         } else {
             if (StaticSegmentvsStaticAABB(aabb_position_A,aabb_extents_A,aabb_position_B,aabb_delta_B,aabb_extents_B.x,aabb_extents_B.y,contact)) {
+                //js.Lib.debug();
                 contact.time = Math.min(Math.max(contact.time-epsilon,0),1);
                 contact.sweepPosition.x = aabb_position_B.x + aabb_delta_B.x * contact.time;
                 contact.sweepPosition.y = aabb_position_B.y + aabb_delta_B.y * contact.time;
@@ -232,11 +232,6 @@ class Intersect
         var pdy = aabb_position_A.y - pcy;
 
         contact.distance = pdx*contact.normal.x + pdy*contact.normal.y;
-        //trace(contact.distance);
-        //return (Dot(p.n, q) - p.d) / Dot(p.n, p.n);
-        // var d = aabb_position_A.y + aabb_extents_A.y + aabb_extents_B.y;
-        //contact.distance = (contact.normal.dot(aabb_position_B) - d) / contact.normal.dot(contact.normal);
-        // contact.distance = aabb_position_A.y + aabb_extents_A.y + aabb_extents_B.y - aabb_position_B.y;
 
         return true;
     }

@@ -23,17 +23,17 @@ class AABB
     inline function get_r():Float { return this.position.x+this.extents.x;}
     inline function get_b():Float { return this.position.y+this.extents.y;}
 
-    public function overlap(aabb:AABB):Bool {
+    inline public function overlap(aabb:AABB):Bool {
         if (Math.abs(position.x-aabb.position.x)>(extents.x+aabb.extents.x)) return false;
         if (Math.abs(position.y-aabb.position.y)>(extents.y+aabb.extents.y)) return false;
         return true;
     }
 
-    public function containsAABB(aabb:AABB):Bool {
+    inline public function containsAABB(aabb:AABB):Bool {
         return false;
     }
 
-    public function containsPoint(point:Vector2):Bool {
+    inline public function containsPoint(point:Vector2):Bool {
         return ( Math.abs(point.x-position.x)<extents.x && Math.abs(point.y-position.y)<extents.y );
     }
 

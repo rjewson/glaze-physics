@@ -16,7 +16,7 @@ class CharacterController
 
     private static inline var WALK_FORCE:Float = 20;
     private static inline var AIR_CONTROL_FORCE:Float = 10;
-    private static inline var JUMP_FORCE:Float = 800;
+    private static inline var JUMP_FORCE:Float = 1000;
 
     private static inline var MAX_AIR_HORIZONTAL_VELOCITY:Float = 500;
 

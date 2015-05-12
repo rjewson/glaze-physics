@@ -25,6 +25,7 @@ class Map
 
     public var tilePosition:Vector2 = new Vector2();
     public var tileExtents:Vector2 = new Vector2();
+    public var delta:Vector2 = new Vector2();
 
     public var contact:Contact;
 
@@ -52,19 +53,23 @@ class Map
                 tilePosition.y = (y*tileSize)+tileHalfSize;
                 var cell = data.get(x,y,0);
                 if (cell>0) {
-
-                    // if (Intersect.StaticAABBvsSweeptAABB(tilePosition,tileExtents,body.position,body.aabb.extents,body.velocity,contact)==false)
-                    //      continue;
-
-                    if (Intersect.AABBvsStaticSolidAABB(body.position,body.aabb.extents,tilePosition,tileExtents,contact)==true) {
-                        var nextX:Int = x + Std.int(contact.normal.x);
-                        var nextY:Int = y + Std.int(contact.normal.y);
-                        var nextCell = data.get(nextX,nextY,0);
-                        if (nextCell==0) {
-                            body.respondStaticCollision(contact);
-                            if (debug!=null)
-                                debug(x,y);
-                        } else {
+                    if (body.isBullet) {     
+                        delta.copy(body.predictedPosition) ;                  
+                        delta.minusEquals(body.position);
+                        if (Intersect.StaticAABBvsSweeptAABB(tilePosition,tileExtents,body.position,body.aabb.extents,delta,contact)==true) {
+                            body.respondBulletCollision(contact);
+                        }
+                    } else {
+                        if (Intersect.AABBvsStaticSolidAABB(body.position,body.aabb.extents,tilePosition,tileExtents,contact)==true) {
+                            var nextX:Int = x + Std.int(contact.normal.x);
+                            var nextY:Int = y + Std.int(contact.normal.y);
+                            var nextCell = data.get(nextX,nextY,0);
+                            if (nextCell==0) {
+                                body.respondStaticCollision(contact);
+                                if (debug!=null)
+                                    debug(x,y);
+                            } else {
+                            }
                         }
                     }
                 }

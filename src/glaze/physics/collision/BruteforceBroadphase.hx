@@ -26,6 +26,11 @@ class BruteforceBroadphase
         target.push(proxy);
     }
 
+    public function removeProxy(proxy:BFProxy) {
+        var target = proxy.isStatic ? staticProxies : dynamicProxies;
+        target.remove(proxy);
+    }
+
     public function collide() {
         var count = dynamicProxies.length;
         for (i in 0...count) {

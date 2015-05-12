@@ -34,7 +34,7 @@ class Engine
         broadphase = new BruteforceBroadphase(map,nf);
 
         contact = new Contact();
-        globalForce = new Vector2(0,20); 
+        globalForce = new Vector2(0,30); 
     }
 
     public function update(delta:Float) {
@@ -76,7 +76,8 @@ class Engine
     }
 
     public function removeBody(body:Body) {
-        
+        dynamicBodies.remove(body);
+        broadphase.removeProxy(body.bfproxy);
     }
 
 }
