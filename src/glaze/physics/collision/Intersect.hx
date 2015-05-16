@@ -28,12 +28,30 @@ class Intersect
         //If either are sensors, or both are dynamic
         //Then do static<>static test
         if ( proxyA.isSensor || proxyB.isSensor || (!proxyA.isStatic && !proxyB.isStatic) ) {
-            collided = Intersect.StaticAABBvsStaticAABB(
+
+            // collided = Intersect.StaticAABBvsStaticAABB(
+            //         proxyA.aabb.position,
+            //         proxyA.aabb.extents,
+            //         proxyB.aabb.position,
+            //         proxyB.aabb.extents,
+            //         contact);
+
+        if (proxyA.body!=null&&proxyB.body!=null) {
+            if (proxyB.body.isBullet==true&&proxyA.body.isBullet==false) {
+                if (Intersect.StaticAABBvsSweeptAABB(
                     proxyA.aabb.position,
                     proxyA.aabb.extents,
                     proxyB.aabb.position,
                     proxyB.aabb.extents,
-                    contact);
+                    proxyB.body.delta,
+                    contact)==true) {
+                    proxyB.body.respondBulletCollision(contact);
+                } 
+            }
+        }
+
+
+
         } else {
             //Were just left with static<>dynamic collisions
             //Order them

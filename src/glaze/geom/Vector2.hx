@@ -81,6 +81,12 @@ class Vector2
 
     public function leftHandNormal():Vector2 {
         return new Vector2(this.y, -this.x);
+    }    
+
+    public function leftHandNormalEquals() {
+        var t = this.x;
+        this.x = this.y;
+        this.y = -t;
     }
 
     public function rightHandNormal():Vector2 {

@@ -17,6 +17,9 @@ import glaze.util.DigitalInput;
 class Test1 
 {
 
+    // public static inline var mapData:String = "eJxjZGBgYKQyphaglXnUMnOw+Jfe8UHt8KOWmdT2O7XT/2BJL0PJPHLilFg7R6p51MQAVwMAbQ==";
+    public static inline var mapData:String = "eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx";
+
     public var loop:GameLoop;
     public var canvas:MiniCanvas;
     public var input:DigitalInput;
@@ -63,7 +66,7 @@ class Test1
 
         // Browser.document.getElementById("stopbutton");
 
-        var mapData = new glaze.ds.Bytes2D(20,20,32,4,glaze.ds.Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnMw+pce8UEtswdj+GEzj1ppf6j4d6ibR6ydI9U8amIAODcAYw=="));
+        var mapData = new glaze.ds.Bytes2D(20,20,32,4,glaze.ds.Bytes2D.uncompressData(mapData));
         map = new Map(mapData);
         map.debug = debugGrid;
         debugGridItems = new Array<Int>();
@@ -146,7 +149,7 @@ class Test1
         var vel = input.mousePosition.clone();
         vel.minusEquals(player.position);
         vel.normalize();
-        vel.multEquals(50000);
+        vel.multEquals(5000);
         bullet.velocity.setTo(vel.x,vel.y);
 
         engine.addBody(bullet);     

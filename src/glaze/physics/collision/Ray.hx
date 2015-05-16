@@ -57,7 +57,6 @@ class Ray
         if (callback!=null&&proxy!=null) {
             if (callback(proxy)<0) {
                 trace('filtered');
-                //js.Lib.debug();
                 return;
             }
         }
@@ -68,10 +67,7 @@ class Ray
             contact.normal.setTo(normalX,normalY);
             contact.distance = Math.sqrt(distSqrd);
             hit = true;
-            trace('reg:',contact.position);
-        } else {
-            trace("out of range:",distSqrd,contact.distance*contact.distance);
-        }
+        } 
 
     }
 

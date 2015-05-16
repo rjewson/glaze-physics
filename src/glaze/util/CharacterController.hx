@@ -20,6 +20,8 @@ class CharacterController
 
     private static inline var MAX_AIR_HORIZONTAL_VELOCITY:Float = 500;
 
+    private var jumping:Bool = false;
+
     public function new(input:DigitalInput,body:Body) {
         this.input = input;
         this.body = body;
@@ -32,11 +34,17 @@ class CharacterController
         var left = input.PressedDuration(65);   //a
         var right = input.PressedDuration(68);  //d
         var up = input.JustPressed(87);         //w
+        var upDuration = input.PressedDuration(87);         //w
         var down = input.PressedDuration(83);   //s
 
         //Just jumped?
-        if (up) {
+        if (!jumping&&body.onGround&&up) {
+            jumping = true;
+            controlForce.y -= JUMP_FORCE/5;
+        }
 
+        if (jumping&&input.Released(87)) {
+            jumping = false;
         }
 
         //Just landed?
@@ -47,10 +55,12 @@ class CharacterController
         if (body.onGround) {
             if (left>0)     controlForce.x -= WALK_FORCE;
             if (right>0)    controlForce.x += WALK_FORCE;
-            if (up)         controlForce.y -= JUMP_FORCE;
+            if (up)         controlForce.y -= JUMP_FORCE/5;
         } else {
             if (left>0)     controlForce.x -= AIR_CONTROL_FORCE;
             if (right>0)    controlForce.x += AIR_CONTROL_FORCE;
+            var d = 10;
+            if (jumping&&upDuration>1&&upDuration<d) controlForce.y -= 800/d;//(d-upDuration);
         }
 
         body.addForce(controlForce);

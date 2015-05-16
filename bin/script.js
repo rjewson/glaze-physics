@@ -213,7 +213,7 @@ demo_Test1.prototype = {
 		this.canvas.display("basic example");
 		this.input = new glaze_util_DigitalInput();
 		this.input.InputTarget(window.document,new glaze_geom_Vector2());
-		var mapData = new glaze_ds_Bytes2D(20,20,32,4,glaze_ds_Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMnMw+pce8UEtswdj+GEzj1ppf6j4d6ibR6ydI9U8amIAODcAYw=="));
+		var mapData = new glaze_ds_Bytes2D(20,20,32,4,glaze_ds_Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx"));
 		this.map = new glaze_physics_collision_Map(mapData);
 		this.map.debug = $bind(this,this.debugGrid);
 		this.debugGridItems = [];
@@ -275,7 +275,7 @@ demo_Test1.prototype = {
 		var vel = this.input.mousePosition.clone();
 		vel.minusEquals(this.player.position);
 		vel.normalize();
-		vel.multEquals(50000);
+		vel.multEquals(5000);
 		bullet.velocity.setTo(vel.x,vel.y);
 		this.engine.addBody(bullet);
 	}
@@ -291,7 +291,7 @@ demo_Test1.prototype = {
 		this.engine.broadphase.QueryArea(area,function(bf) {
 			count++;
 		});
-		haxe_Log.trace("Found:" + count,{ fileName : "Test1.hx", lineNumber : 170, className : "demo.Test1", methodName : "searchArea"});
+		console.log("Found:" + count);
 	}
 	,rayTest: function(proxy) {
 		if(proxy.body != null && proxy.body == this.player) return -1; else return 0;
@@ -493,6 +493,28 @@ glaze_geom_BFBB.prototype = {
 	}
 	,__class__: glaze_geom_BFBB
 };
+var glaze_geom_Plane = function() {
+	this.d = 0;
+	this.n = new glaze_geom_Vector2();
+};
+glaze_geom_Plane.__name__ = true;
+glaze_geom_Plane.prototype = {
+	set: function(n,q) {
+		this.n.copy(n);
+		this.d = this.n.dot(q);
+	}
+	,setFromSegment: function(s,e) {
+		this.n.copy(s);
+		this.n.minusEquals(e);
+		this.n.normalize();
+		this.n.leftHandNormalEquals();
+		this.d = this.n.dot(s);
+	}
+	,distancePoint: function(q) {
+		return this.n.dot(q) - this.d;
+	}
+	,__class__: glaze_geom_Plane
+};
 var glaze_geom_Vector2 = function(x,y) {
 	if(y == null) y = .0;
 	if(x == null) x = .0;
@@ -554,6 +576,11 @@ glaze_geom_Vector2.prototype = {
 	,leftHandNormal: function() {
 		return new glaze_geom_Vector2(this.y,-this.x);
 	}
+	,leftHandNormalEquals: function() {
+		var t = this.x;
+		this.x = this.y;
+		this.y = -t;
+	}
 	,rightHandNormal: function() {
 		return new glaze_geom_Vector2(-this.y,this.x);
 	}
@@ -586,6 +613,7 @@ var glaze_physics_Body = function(w,h,material) {
 	this.originalVelocity = new glaze_geom_Vector2();
 	this.velocity = new glaze_geom_Vector2();
 	this.previousPosition = new glaze_geom_Vector2();
+	this.delta = new glaze_geom_Vector2();
 	this.predictedPosition = new glaze_geom_Vector2();
 	this.positionCorrection = new glaze_geom_Vector2();
 	this.position = new glaze_geom_Vector2();
@@ -611,6 +639,8 @@ glaze_physics_Body.prototype = {
 		this.predictedPosition.copy(this.position);
 		this.predictedPosition.plusMultEquals(this.velocity,dt);
 		this.previousPosition.copy(this.position);
+		this.delta.copy(this.predictedPosition);
+		this.delta.minusEquals(this.position);
 		this.forces.setTo(0,0);
 		this.damping = 1;
 		this.onGroundPrev = this.onGround;
@@ -636,7 +666,7 @@ glaze_physics_Body.prototype = {
 	}
 	,t: function(msg) {
 		if(this.debug > 0) {
-			haxe_Log.trace(msg,{ fileName : "Body.hx", lineNumber : 133, className : "glaze.physics.Body", methodName : "t"});
+			console.log(msg);
 			this.debug--;
 		}
 	}
@@ -960,7 +990,13 @@ glaze_physics_collision_Intersect.prototype = {
 	Collide: function(proxyA,proxyB) {
 		if(proxyA.isStatic && proxyB.isStatic) return false;
 		var collided = false;
-		if(proxyA.isSensor || proxyB.isSensor || !proxyA.isStatic && !proxyB.isStatic) collided = glaze_physics_collision_Intersect.StaticAABBvsStaticAABB(proxyA.aabb.position,proxyA.aabb.extents,proxyB.aabb.position,proxyB.aabb.extents,this.contact); else {
+		if(proxyA.isSensor || proxyB.isSensor || !proxyA.isStatic && !proxyB.isStatic) {
+			if(proxyA.body != null && proxyB.body != null) {
+				if(proxyB.body.isBullet == true && proxyA.body.isBullet == false) {
+					if(glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(proxyA.aabb.position,proxyA.aabb.extents,proxyB.aabb.position,proxyB.aabb.extents,proxyB.body.delta,this.contact) == true) proxyB.body.respondBulletCollision(this.contact);
+				}
+			}
+		} else {
 			var staticProxy;
 			var dynamicProxy;
 			if(proxyA.isStatic) {
@@ -1002,6 +1038,7 @@ glaze_physics_collision_Intersect.prototype = {
 	,__class__: glaze_physics_collision_Intersect
 };
 var glaze_physics_collision_Map = function(data) {
+	this.plane = new glaze_geom_Plane();
 	this.delta = new glaze_geom_Vector2();
 	this.tileExtents = new glaze_geom_Vector2();
 	this.tilePosition = new glaze_geom_Vector2();
@@ -1016,8 +1053,9 @@ glaze_physics_collision_Map.prototype = {
 	testCollision: function(body) {
 		this.startX = this.data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x);
 		this.startY = this.data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y);
-		this.endX = this.data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x + .5) + 1;
-		this.endY = this.data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y + .5) + 1;
+		this.endX = this.data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x - .01) + 1;
+		this.endY = this.data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y) + 1;
+		this.plane.setFromSegment(body.predictedPosition,body.position);
 		var _g1 = this.startX;
 		var _g = this.endX;
 		while(_g1 < _g) {
@@ -1031,9 +1069,9 @@ glaze_physics_collision_Map.prototype = {
 				var cell = this.data.get(x,y,0);
 				if(cell > 0) {
 					if(body.isBullet) {
-						this.delta.copy(body.predictedPosition);
-						this.delta.minusEquals(body.position);
-						if(glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(this.tilePosition,this.tileExtents,body.position,body.aabb.extents,this.delta,this.contact) == true) body.respondBulletCollision(this.contact);
+						if(Math.abs(this.plane.distancePoint(this.tilePosition)) < 40) {
+							if(glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(this.tilePosition,this.tileExtents,body.position,body.aabb.extents,body.delta,this.contact) == true) body.respondBulletCollision(this.contact);
+						}
 					} else if(glaze_physics_collision_Intersect.AABBvsStaticSolidAABB(body.position,body.aabb.extents,this.tilePosition,this.tileExtents,this.contact) == true) {
 						var nextX = x + (this.contact.normal.x | 0);
 						var nextY = y + (this.contact.normal.y | 0);
@@ -1061,8 +1099,8 @@ glaze_physics_collision_Map.prototype = {
 			contact.normal.x = 0;
 			if(dy < 0) contact.normal.y = 1; else contact.normal.y = -1;
 		}
-		if(aabb_position_A.y + aabb_extents_A.y < aabb_position_B.y + aabb_extents_B.y && aabb_position_A.x - aabb_extents_B.x > aabb_position_B.x - aabb_extents_B.x) {
-			haxe_Log.trace("a",{ fileName : "Map.hx", lineNumber : 104, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
+		if(px >= 0 && py >= 0) {
+			console.log("a");
 			contact.normal.x = 0.707106781186547462;
 			contact.normal.y = -0.707106781186547462;
 			var cornerTile = new glaze_geom_Vector2(aabb_position_B.x - aabb_extents_B.x,aabb_position_B.y - aabb_extents_B.y);
@@ -1071,7 +1109,7 @@ glaze_physics_collision_Map.prototype = {
 			contact.distance = (contact.normal.dot(cornerBody) - d) / contact.normal.dot(contact.normal);
 			return true;
 		} else {
-			haxe_Log.trace("b",{ fileName : "Map.hx", lineNumber : 115, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
+			console.log("b");
 			var pcx = contact.normal.x * (aabb_extents_A.x + aabb_extents_B.x) + aabb_position_B.x;
 			var pcy = contact.normal.y * (aabb_extents_A.y + aabb_extents_B.y) + aabb_position_B.y;
 			var pdx = aabb_position_A.x - pcx;
@@ -1176,7 +1214,7 @@ glaze_physics_collision_Ray.prototype = {
 	,report: function(distX,distY,normalX,normalY,proxy) {
 		if(this.callback != null && proxy != null) {
 			if(this.callback(proxy) < 0) {
-				haxe_Log.trace("filtered",{ fileName : "Ray.hx", lineNumber : 59, className : "glaze.physics.collision.Ray", methodName : "report"});
+				console.log("filtered");
 				return;
 			}
 		}
@@ -1186,12 +1224,12 @@ glaze_physics_collision_Ray.prototype = {
 			this.contact.normal.setTo(normalX,normalY);
 			this.contact.distance = Math.sqrt(distSqrd);
 			this.hit = true;
-			haxe_Log.trace("reg:",{ fileName : "Ray.hx", lineNumber : 71, className : "glaze.physics.collision.Ray", methodName : "report", customParams : [this.contact.position]});
-		} else haxe_Log.trace("out of range:",{ fileName : "Ray.hx", lineNumber : 73, className : "glaze.physics.collision.Ray", methodName : "report", customParams : [distSqrd,this.contact.distance * this.contact.distance]});
+		}
 	}
 	,__class__: glaze_physics_collision_Ray
 };
 var glaze_util_CharacterController = function(input,body) {
+	this.jumping = false;
 	this.jumpUnit = new glaze_geom_Vector2();
 	this.controlForce = new glaze_geom_Vector2();
 	this.input = input;
@@ -1204,18 +1242,24 @@ glaze_util_CharacterController.prototype = {
 		var left = this.input.PressedDuration(65);
 		var right = this.input.PressedDuration(68);
 		var up = this.input.JustPressed(87);
+		var upDuration = this.input.PressedDuration(87);
 		var down = this.input.PressedDuration(83);
-		if(up) {
+		if(!this.jumping && this.body.onGround && up) {
+			this.jumping = true;
+			this.controlForce.y -= 200.;
 		}
+		if(this.jumping && this.input.keyMap[87] == 0) this.jumping = false;
 		if(this.body.onGround && !this.body.onGroundPrev) {
 		}
 		if(this.body.onGround) {
 			if(left > 0) this.controlForce.x -= 20;
 			if(right > 0) this.controlForce.x += 20;
-			if(up) this.controlForce.y -= 1000;
+			if(up) this.controlForce.y -= 200.;
 		} else {
 			if(left > 0) this.controlForce.x -= 10;
 			if(right > 0) this.controlForce.x += 10;
+			var d = 10;
+			if(this.jumping && upDuration > 1 && upDuration < d) this.controlForce.y -= 800 / d;
 		}
 		this.body.addForce(this.controlForce);
 	}
@@ -1444,11 +1488,6 @@ var haxe__$Int64__$_$_$Int64 = function(high,low) {
 haxe__$Int64__$_$_$Int64.__name__ = true;
 haxe__$Int64__$_$_$Int64.prototype = {
 	__class__: haxe__$Int64__$_$_$Int64
-};
-var haxe_Log = function() { };
-haxe_Log.__name__ = true;
-haxe_Log.trace = function(v,infos) {
-	js_Boot.__trace(v,infos);
 };
 var haxe_crypto_Adler32 = function() {
 	this.a1 = 1;
@@ -2252,25 +2291,6 @@ js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
 });
 var js_Boot = function() { };
 js_Boot.__name__ = true;
-js_Boot.__unhtml = function(s) {
-	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
-};
-js_Boot.__trace = function(v,i) {
-	var msg;
-	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
-	msg += js_Boot.__string_rec(v,"");
-	if(i != null && i.customParams != null) {
-		var _g = 0;
-		var _g1 = i.customParams;
-		while(_g < _g1.length) {
-			var v1 = _g1[_g];
-			++_g;
-			msg += "," + js_Boot.__string_rec(v1,"");
-		}
-	}
-	var d;
-	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js_Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
-};
 js_Boot.getClass = function(o) {
 	if((o instanceof Array) && o.__enum__ == null) return Array; else {
 		var cl = o.__class__;
@@ -2605,7 +2625,7 @@ minicanvas_MiniCanvas.create = function(width,height,scaleMode) {
 minicanvas_MiniCanvas.prototype = {
 	display: function(name) {
 		this.deltaTime = performance.now() - this.startTime;
-		if(!minicanvas_MiniCanvas.displayGenerationTime) haxe_Log.trace("generated \"" + name + "\" in " + thx_Floats.roundTo(this.deltaTime,2) + "ms",{ fileName : "MiniCanvas.hx", lineNumber : 53, className : "minicanvas.MiniCanvas", methodName : "display"});
+		if(!minicanvas_MiniCanvas.displayGenerationTime) console.log("generated \"" + name + "\" in " + thx_Floats.roundTo(this.deltaTime,2) + "ms");
 		this.nativeDisplay(name);
 		return this;
 	}
@@ -6944,9 +6964,11 @@ if(typeof(scope.performance.now) == "undefined") {
 	};
 	scope.performance.now = now;
 }
+demo_Test1.mapData = "eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx";
 glaze_geom_Vector2.ZERO_TOLERANCE = 1e-08;
 glaze_physics_collision_Intersect.epsilon = 1e-8;
 glaze_physics_collision_Map.CORRECTION = .0;
+glaze_physics_collision_Map.ROUNDDOWN = .01;
 glaze_physics_collision_Map.ROUNDUP = .5;
 glaze_util_CharacterController.WALK_FORCE = 20;
 glaze_util_CharacterController.AIR_CONTROL_FORCE = 10;

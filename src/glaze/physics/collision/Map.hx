@@ -2,6 +2,7 @@
 package glaze.physics.collision;
 
 import glaze.ds.Bytes2D;
+import glaze.geom.Plane;
 import glaze.geom.Vector2;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Intersect;
@@ -11,6 +12,7 @@ class Map
 {
 
     public static inline var CORRECTION:Float = .0;
+    public static inline var ROUNDDOWN:Float = .01;
     public static inline var ROUNDUP:Float = .5;
 
     public var tileSize:Float;
@@ -26,6 +28,7 @@ class Map
     public var tilePosition:Vector2 = new Vector2();
     public var tileExtents:Vector2 = new Vector2();
     public var delta:Vector2 = new Vector2();
+    public var plane:Plane = new Plane();
 
     public var contact:Contact;
 
@@ -44,20 +47,27 @@ class Map
         startX = data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x - CORRECTION);
         startY = data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y - CORRECTION);
 
-        endX = data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x + CORRECTION + ROUNDUP) + 1;
-        endY = data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y + CORRECTION + ROUNDUP) + 1;
+        endX = data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x + CORRECTION - ROUNDDOWN) + 1;
+        endY = data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y + CORRECTION ) + 1;
+
+        plane.setFromSegment(body.predictedPosition,body.position);
 
         for (x in startX...endX) {
             for (y in startY...endY) {
                 tilePosition.x = (x*tileSize)+tileHalfSize;
                 tilePosition.y = (y*tileSize)+tileHalfSize;
                 var cell = data.get(x,y,0);
+                // if (Math.abs(plane.distancePoint(tilePosition))>40)
+                //     continue;
+                // if (debug!=null)
+                //     debug(x,y);
                 if (cell>0) {
-                    if (body.isBullet) {     
-                        delta.copy(body.predictedPosition) ;                  
-                        delta.minusEquals(body.position);
-                        if (Intersect.StaticAABBvsSweeptAABB(tilePosition,tileExtents,body.position,body.aabb.extents,delta,contact)==true) {
-                            body.respondBulletCollision(contact);
+                    if (body.isBullet) {
+                        // trace(Math.abs(plane.distancePoint(tilePosition)));
+                        if (Math.abs(plane.distancePoint(tilePosition))<40) {
+                            if (Intersect.StaticAABBvsSweeptAABB(tilePosition,tileExtents,body.position,body.aabb.extents,body.delta,contact)==true) {
+                                body.respondBulletCollision(contact);
+                            }                            
                         }
                     } else {
                         if (Intersect.AABBvsStaticSolidAABB(body.position,body.aabb.extents,tilePosition,tileExtents,contact)==true) {
@@ -98,9 +108,9 @@ class Map
         }
         
 
-        if (aabb_position_A.y+aabb_extents_A.y<aabb_position_B.y+aabb_extents_B.y && aabb_position_A.x-aabb_extents_B.x > aabb_position_B.x-aabb_extents_B.x) {
+        //if (aabb_position_A.y+aabb_extents_A.y<aabb_position_B.y+aabb_extents_B.y && aabb_position_A.x-aabb_extents_B.x > aabb_position_B.x-aabb_extents_B.x) {
 
-        // if(px>=0&&py>=0) {
+         if(px>=0&&py>=0) {
             trace('a');
             contact.normal.x =  1/1.4142135623730951;
             contact.normal.y = -1/1.4142135623730951;

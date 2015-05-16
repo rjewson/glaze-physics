@@ -13,6 +13,7 @@ class Body
     public var position:Vector2 = new Vector2();
     public var positionCorrection:Vector2 = new Vector2();
     public var predictedPosition:Vector2 = new Vector2();
+    public var delta:Vector2 = new Vector2();
     public var previousPosition:Vector2 = new Vector2();
 
     public var velocity:Vector2 = new Vector2();
@@ -83,6 +84,9 @@ class Body
         predictedPosition.copy(position);
         predictedPosition.plusMultEquals(velocity,dt);
         previousPosition.copy(position);
+
+        delta.copy(predictedPosition);                  
+        delta.minusEquals(position);
 
         forces.setTo(0,0);
         damping = 1;
