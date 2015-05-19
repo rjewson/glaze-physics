@@ -77,8 +77,8 @@ class DigitalInput
     public function MouseMove(event : MouseEvent) : Void {
         mousePreviousPosition.x = mousePosition.x;
         mousePreviousPosition.y = mousePosition.y;
-        mousePosition.x = event.clientX;
-        mousePosition.y = event.clientY;
+        mousePosition.x = event.clientX - inputCorrection.x;
+        mousePosition.y = event.clientY - inputCorrection.y;
         event.preventDefault();
     }
 
@@ -100,7 +100,7 @@ class DigitalInput
     
     inline public function PressedDuration(keyCode : Int) : Int {
         var duration = keyMap[keyCode];
-        return (duration > 0) ? (frameRef - duration) : 0;
+        return (duration > 0) ? (frameRef - duration) : -1;
     }
     
     inline public function Released(keyCode : Int) : Bool {

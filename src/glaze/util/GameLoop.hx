@@ -11,7 +11,7 @@ class GameLoop
     public var delta:Float;
     private var rafID:Int;
 
-    public var updateFunc:Float->Void;
+    public var updateFunc:Float->Int->Void;
 
     public function new() {
         isRunning = false;
@@ -22,7 +22,7 @@ class GameLoop
         prevAnimationTime = timestamp;
         if (updateFunc!=null)
             //updateFunc(delta);
-            updateFunc(1000/60);
+            updateFunc(1000/60,Math.floor(timestamp));
         rafID = Browser.window.requestAnimationFrame(update);
         return false;
     }

@@ -15,43 +15,99 @@ class Intersect
     public function new() {
     }
 
-    public function Collide(proxyA:BFProxy,proxyB:BFProxy):Bool {
+    public function Collide2(proxyA:BFProxy,proxyB:BFProxy):Bool {
         
         //Exit on static vs statics, they should never be sent but you never know
-        if (proxyA.isStatic && proxyB.isStatic)
+        //Sensors dont trigger other sensors
+        if ((proxyA.isStatic && proxyB.isStatic) || (proxyA.isSensor && proxyB.isSensor))
             return false;
 
         //Do filtering
+        if (!Filter.CHECK(proxyA.filter,proxyB.filter))
+            return false;
 
         var collided = false;
 
-        //If either are sensors, or both are dynamic
-        //Then do static<>static test
-        if ( proxyA.isSensor || proxyB.isSensor || (!proxyA.isStatic && !proxyB.isStatic) ) {
+        var collisionType = 0;
+        var responseType = 0;
+        var swap = false;
 
-            // collided = Intersect.StaticAABBvsStaticAABB(
-            //         proxyA.aabb.position,
-            //         proxyA.aabb.extents,
-            //         proxyB.aabb.position,
-            //         proxyB.aabb.extents,
-            //         contact);
+        var dynamic_dynamic = (!proxyA.isStatic && !proxyB.isStatic);
 
-        if (proxyA.body!=null&&proxyB.body!=null) {
-            if (proxyB.body.isBullet==true&&proxyA.body.isBullet==false) {
-                if (Intersect.StaticAABBvsSweeptAABB(
+        return true;
+
+    }
+
+    public function Collide(proxyA:BFProxy,proxyB:BFProxy):Bool {
+        
+        //Exit on static vs statics, they should never be sent but you never know
+        //Sensors dont trigger other sensors
+        if ((proxyA.isStatic && proxyB.isStatic) || (proxyA.isSensor && proxyB.isSensor))
+            return false;
+
+        //Do filtering
+        if (!Filter.CHECK(proxyA.filter,proxyB.filter))
+            return false;
+
+        var collided = false;
+
+        if ( proxyA.isSensor || proxyB.isSensor ) {
+            //One is a sensor so just check for overlap
+            collided = Intersect.StaticAABBvsStaticAABB(
                     proxyA.aabb.position,
                     proxyA.aabb.extents,
                     proxyB.aabb.position,
                     proxyB.aabb.extents,
-                    proxyB.body.delta,
-                    contact)==true) {
+                    contact);
+            //TODO should we make a special case for bullets?            
+
+        } else if (!proxyA.isStatic && !proxyB.isStatic) {
+            //Both are dynamic, which means both have bodies
+            if (proxyA.body.isBullet&&proxyB.body.isBullet) {
+                //Both bullets? for now nothing
+                return false;
+            } else if (proxyA.body.isBullet) {
+                //Just A is a bullet
+                if (Intersect.StaticAABBvsSweeptAABB(
+                        proxyB.aabb.position,
+                        proxyB.aabb.extents,
+                        proxyA.aabb.position,
+                        proxyA.aabb.extents,
+                        proxyA.body.delta,
+                        contact)==true) {
+                    proxyA.body.respondBulletCollision(contact);
+
+                    // var response = contact.normal.clone();
+                    // response.x *= -100;
+                    // response.y *= -100;
+                    // proxyA.body.addForce(response);
+                    collided=true;
+                }
+            } else if (proxyB.body.isBullet) {
+                //Just B is a bullet
+                if (Intersect.StaticAABBvsSweeptAABB(
+                        proxyA.aabb.position,
+                        proxyA.aabb.extents,
+                        proxyB.aabb.position,
+                        proxyB.aabb.extents,
+                        proxyB.body.delta,
+                        contact)==true) {
                     proxyB.body.respondBulletCollision(contact);
+
+                    // var response = contact.normal.clone();
+                    // response.x *= -100;
+                    // response.y *= -100;
+                    //proxyA.body.addForce(response);
+                    collided=true;
                 } 
-            }
-        }
-
-
-
+            } else {
+                //Regular dynamic<>dynamic
+                collided = Intersect.StaticAABBvsStaticAABB(
+                        proxyA.aabb.position,
+                        proxyA.aabb.extents,
+                        proxyB.aabb.position,
+                        proxyB.aabb.extents,
+                        contact);            }
         } else {
             //Were just left with static<>dynamic collisions
             //Order them
@@ -110,8 +166,8 @@ class Intersect
         dy_n *= true_offset;
         var fx = k*dx_n;
         var fy = k*dy_n;
-        //bodyA.addForce(new Vector2(fx,fy));
-        //bodyB.addForce(new Vector2(-fx,-fy));
+        bodyA.addForce(new Vector2(fx,fy));
+        bodyB.addForce(new Vector2(-fx,-fy));
         // bodyA.collisionForce.plusEquals(new Vector2(fx,fy));
         // bodyB.collisionForce.plusEquals(new Vector2(-fx,-fy));
     }

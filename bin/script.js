@@ -211,8 +211,10 @@ demo_Test1.prototype = {
 	,setup: function() {
 		this.canvas = minicanvas_MiniCanvas.create(640,640);
 		this.canvas.display("basic example");
+		var rect = this.canvas.canvas.getBoundingClientRect();
 		this.input = new glaze_util_DigitalInput();
-		this.input.InputTarget(window.document,new glaze_geom_Vector2());
+		this.input.InputTarget(window.document,new glaze_geom_Vector2(rect.left,rect.top));
+		haxe_Log.trace(rect.x,{ fileName : "Test1.hx", lineNumber : 71, className : "demo.Test1", methodName : "setup", customParams : [rect.y]});
 		var mapData = new glaze_ds_Bytes2D(20,20,32,4,glaze_ds_Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx"));
 		this.map = new glaze_physics_collision_Map(mapData);
 		this.map.debug = $bind(this,this.debugGrid);
@@ -224,7 +226,9 @@ demo_Test1.prototype = {
 	}
 	,customSetup: function() {
 		this.mat1 = new glaze_physics_Material();
-		this.player = new glaze_physics_Body(20,45,this.mat1);
+		this.playerFilter = new glaze_physics_collision_Filter();
+		this.playerFilter.groupIndex = 1;
+		this.player = new glaze_physics_Body(20,45,this.mat1,this.playerFilter);
 		this.player.position.setTo(200,200);
 		this.player.maxScalarVelocity = 0;
 		this.player.maxVelocity.setTo(160,1000);
@@ -238,13 +242,14 @@ demo_Test1.prototype = {
 		water.isSensor = true;
 		this.engine.broadphase.addProxy(water);
 		this.ray = new glaze_physics_collision_Ray();
+		var di2 = new glaze_util_DigitalInput2();
 	}
 	,cb: function(a,b,c) {
 		var area = a.aabb.overlapArea(b.aabb);
 		b.body.damping = 0.95;
 		b.body.addForce(new glaze_geom_Vector2(0,-area / 100));
 	}
-	,update: function(delta) {
+	,update: function(delta,now) {
 		this.debugGridItemsCount = 0;
 		this.input.Update(0,0);
 		this.ray.hit = false;
@@ -266,7 +271,7 @@ demo_Test1.prototype = {
 	}
 	,fireBullet: function(debugCount) {
 		if(debugCount == null) debugCount = 0;
-		var bullet = new glaze_physics_Body(5,5,this.mat1);
+		var bullet = new glaze_physics_Body(5,5,this.mat1,this.playerFilter);
 		bullet.setMass(0.03);
 		bullet.setBounces(3);
 		bullet.position.setTo(this.player.position.x,this.player.position.y);
@@ -291,7 +296,7 @@ demo_Test1.prototype = {
 		this.engine.broadphase.QueryArea(area,function(bf) {
 			count++;
 		});
-		console.log("Found:" + count);
+		haxe_Log.trace("Found:" + count,{ fileName : "Test1.hx", lineNumber : 188, className : "demo.Test1", methodName : "searchArea"});
 	}
 	,rayTest: function(proxy) {
 		if(proxy.body != null && proxy.body == this.player) return -1; else return 0;
@@ -591,7 +596,7 @@ glaze_geom_Vector2.prototype = {
 	}
 	,__class__: glaze_geom_Vector2
 };
-var glaze_physics_Body = function(w,h,material) {
+var glaze_physics_Body = function(w,h,material,filter) {
 	this.debug = 0;
 	this.bounceCount = 0;
 	this.totalBounceCount = 0;
@@ -619,9 +624,11 @@ var glaze_physics_Body = function(w,h,material) {
 	this.position = new glaze_geom_Vector2();
 	this.aabb.extents.setTo(w,h);
 	this.material = material;
+	this.filter = filter;
 	this.aabb.position = this.position;
 	this.setMass(1);
 	this.bfproxy.body = this;
+	this.bfproxy.filter = this.filter;
 	this.bfproxy.aabb = this.aabb;
 	this.bfproxy.isStatic = false;
 };
@@ -666,7 +673,7 @@ glaze_physics_Body.prototype = {
 	}
 	,t: function(msg) {
 		if(this.debug > 0) {
-			console.log(msg);
+			haxe_Log.trace(msg,{ fileName : "Body.hx", lineNumber : 141, className : "glaze.physics.Body", methodName : "t"});
 			this.debug--;
 		}
 	}
@@ -871,8 +878,8 @@ var glaze_physics_collision_Filter = function() {
 	this.categoryBits = 1;
 };
 glaze_physics_collision_Filter.__name__ = true;
-glaze_physics_collision_Filter.check = function(filterA,filterB) {
-	if(filterA.groupIndex > 0 && filterB.groupIndex > 0 && filterA.groupIndex == filterB.groupIndex) return false; else {
+glaze_physics_collision_Filter.CHECK = function(filterA,filterB) {
+	if(filterA == null || filterB == null) return true; else if(filterA.groupIndex > 0 && filterB.groupIndex > 0 && filterA.groupIndex == filterB.groupIndex) return false; else {
 		if((filterA.maskBits & filterB.categoryBits) == 0) return false;
 		if((filterA.categoryBits & filterB.maskBits) == 0) return false;
 	}
@@ -987,15 +994,32 @@ glaze_physics_collision_Intersect.AABBvsStaticSolidAABB = function(aabb_position
 	return true;
 };
 glaze_physics_collision_Intersect.prototype = {
-	Collide: function(proxyA,proxyB) {
-		if(proxyA.isStatic && proxyB.isStatic) return false;
+	Collide2: function(proxyA,proxyB) {
+		if(proxyA.isStatic && proxyB.isStatic || proxyA.isSensor && proxyB.isSensor) return false;
+		if(!glaze_physics_collision_Filter.CHECK(proxyA.filter,proxyB.filter)) return false;
 		var collided = false;
-		if(proxyA.isSensor || proxyB.isSensor || !proxyA.isStatic && !proxyB.isStatic) {
-			if(proxyA.body != null && proxyB.body != null) {
-				if(proxyB.body.isBullet == true && proxyA.body.isBullet == false) {
-					if(glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(proxyA.aabb.position,proxyA.aabb.extents,proxyB.aabb.position,proxyB.aabb.extents,proxyB.body.delta,this.contact) == true) proxyB.body.respondBulletCollision(this.contact);
+		var collisionType = 0;
+		var responseType = 0;
+		var swap = false;
+		var dynamic_dynamic = !proxyA.isStatic && !proxyB.isStatic;
+		return true;
+	}
+	,Collide: function(proxyA,proxyB) {
+		if(proxyA.isStatic && proxyB.isStatic || proxyA.isSensor && proxyB.isSensor) return false;
+		if(!glaze_physics_collision_Filter.CHECK(proxyA.filter,proxyB.filter)) return false;
+		var collided = false;
+		if(proxyA.isSensor || proxyB.isSensor) collided = glaze_physics_collision_Intersect.StaticAABBvsStaticAABB(proxyA.aabb.position,proxyA.aabb.extents,proxyB.aabb.position,proxyB.aabb.extents,this.contact); else if(!proxyA.isStatic && !proxyB.isStatic) {
+			if(proxyA.body.isBullet && proxyB.body.isBullet) return false; else if(proxyA.body.isBullet) {
+				if(glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(proxyB.aabb.position,proxyB.aabb.extents,proxyA.aabb.position,proxyA.aabb.extents,proxyA.body.delta,this.contact) == true) {
+					proxyA.body.respondBulletCollision(this.contact);
+					collided = true;
 				}
-			}
+			} else if(proxyB.body.isBullet) {
+				if(glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(proxyA.aabb.position,proxyA.aabb.extents,proxyB.aabb.position,proxyB.aabb.extents,proxyB.body.delta,this.contact) == true) {
+					proxyB.body.respondBulletCollision(this.contact);
+					collided = true;
+				}
+			} else collided = glaze_physics_collision_Intersect.StaticAABBvsStaticAABB(proxyA.aabb.position,proxyA.aabb.extents,proxyB.aabb.position,proxyB.aabb.extents,this.contact);
 		} else {
 			var staticProxy;
 			var dynamicProxy;
@@ -1034,6 +1058,8 @@ glaze_physics_collision_Intersect.prototype = {
 		dy_n *= true_offset;
 		var fx = k * dx_n;
 		var fy = k * dy_n;
+		bodyA.addForce(new glaze_geom_Vector2(fx,fy));
+		bodyB.addForce(new glaze_geom_Vector2(-fx,-fy));
 	}
 	,__class__: glaze_physics_collision_Intersect
 };
@@ -1100,7 +1126,7 @@ glaze_physics_collision_Map.prototype = {
 			if(dy < 0) contact.normal.y = 1; else contact.normal.y = -1;
 		}
 		if(px >= 0 && py >= 0) {
-			console.log("a");
+			haxe_Log.trace("a",{ fileName : "Map.hx", lineNumber : 114, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
 			contact.normal.x = 0.707106781186547462;
 			contact.normal.y = -0.707106781186547462;
 			var cornerTile = new glaze_geom_Vector2(aabb_position_B.x - aabb_extents_B.x,aabb_position_B.y - aabb_extents_B.y);
@@ -1109,7 +1135,7 @@ glaze_physics_collision_Map.prototype = {
 			contact.distance = (contact.normal.dot(cornerBody) - d) / contact.normal.dot(contact.normal);
 			return true;
 		} else {
-			console.log("b");
+			haxe_Log.trace("b",{ fileName : "Map.hx", lineNumber : 125, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
 			var pcx = contact.normal.x * (aabb_extents_A.x + aabb_extents_B.x) + aabb_position_B.x;
 			var pcy = contact.normal.y * (aabb_extents_A.y + aabb_extents_B.y) + aabb_position_B.y;
 			var pdx = aabb_position_A.x - pcx;
@@ -1214,7 +1240,7 @@ glaze_physics_collision_Ray.prototype = {
 	,report: function(distX,distY,normalX,normalY,proxy) {
 		if(this.callback != null && proxy != null) {
 			if(this.callback(proxy) < 0) {
-				console.log("filtered");
+				haxe_Log.trace("filtered",{ fileName : "Ray.hx", lineNumber : 59, className : "glaze.physics.collision.Ray", methodName : "report"});
 				return;
 			}
 		}
@@ -1248,7 +1274,7 @@ glaze_util_CharacterController.prototype = {
 			this.jumping = true;
 			this.controlForce.y -= 200.;
 		}
-		if(this.jumping && this.input.keyMap[87] == 0) this.jumping = false;
+		if(this.jumping && this.input.keyMap[87] == 0 || this.body.lastNormal.y > 0) this.jumping = false;
 		if(this.body.onGround && !this.body.onGroundPrev) {
 		}
 		if(this.body.onGround) {
@@ -1312,8 +1338,8 @@ glaze_util_DigitalInput.prototype = {
 	,MouseMove: function(event) {
 		this.mousePreviousPosition.x = this.mousePosition.x;
 		this.mousePreviousPosition.y = this.mousePosition.y;
-		this.mousePosition.x = event.clientX;
-		this.mousePosition.y = event.clientY;
+		this.mousePosition.x = event.clientX - this.inputCorrection.x;
+		this.mousePosition.y = event.clientY - this.inputCorrection.y;
 		event.preventDefault();
 	}
 	,Pressed: function(keyCode) {
@@ -1324,12 +1350,108 @@ glaze_util_DigitalInput.prototype = {
 	}
 	,PressedDuration: function(keyCode) {
 		var duration = this.keyMap[keyCode];
-		if(duration > 0) return this.frameRef - duration; else return 0;
+		if(duration > 0) return this.frameRef - duration; else return -1;
 	}
 	,Released: function(keyCode) {
 		return this.keyMap[keyCode] == 0;
 	}
 	,__class__: glaze_util_DigitalInput
+};
+var glaze_util_DigitalInput2 = function() {
+	this.inputData = [];
+	var _g = 0;
+	while(_g < 255) {
+		var i = _g++;
+		this.inputData[i] = new glaze_util_DigitalInputData(this,i);
+	}
+	this.mousePosition = new glaze_geom_Vector2();
+	this.mousePreviousPosition = new glaze_geom_Vector2();
+	this.mouseOffset = new glaze_geom_Vector2();
+	this.frameRef = 2;
+};
+glaze_util_DigitalInput2.__name__ = true;
+glaze_util_DigitalInput2.prototype = {
+	InputTarget: function(target,inputCorrection) {
+		this.target = target;
+		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
+		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
+		target.addEventListener("mousedown",$bind(this,this.MouseDown),false);
+		target.addEventListener("mouseup",$bind(this,this.MouseUp),false);
+		target.addEventListener("mousemove",$bind(this,this.MouseMove),false);
+		this.inputCorrection = inputCorrection;
+	}
+	,Update: function(now,x,y) {
+		this.mouseOffset.x = x;
+		this.mouseOffset.y = y;
+		this.now = Math.round(now);
+	}
+	,GetInputData: function(keyCode) {
+		return this.inputData[keyCode];
+	}
+	,KeyDown: function(event) {
+		this.inputData[event.keyCode].onDown();
+		event.preventDefault();
+	}
+	,KeyUp: function(event) {
+		this.inputData[event.keyCode].onUp();
+		event.preventDefault();
+	}
+	,MouseDown: function(event) {
+		this.inputData[200].onDown();
+		event.preventDefault();
+	}
+	,MouseUp: function(event) {
+		this.inputData[200].onUp();
+		event.preventDefault();
+	}
+	,MouseMove: function(event) {
+		this.mousePreviousPosition.x = this.mousePosition.x;
+		this.mousePreviousPosition.y = this.mousePosition.y;
+		this.mousePosition.x = event.clientX;
+		this.mousePosition.y = event.clientY;
+		event.preventDefault();
+	}
+	,__class__: glaze_util_DigitalInput2
+};
+var glaze_util_DigitalInputData = function(digitalInput,code) {
+	this.lastUp = 0;
+	this.lastDown = 0;
+	this.code = 0;
+	this.digitalInput = digitalInput;
+	this.code = code;
+};
+glaze_util_DigitalInputData.__name__ = true;
+glaze_util_DigitalInputData.prototype = {
+	onDown: function() {
+		this.down = true;
+		this.lastDown = this.digitalInput.now;
+		haxe_Log.trace("down " + this.code + " " + this.lastDown,{ fileName : "DigitalInputData.hx", lineNumber : 24, className : "glaze.util.DigitalInputData", methodName : "onDown"});
+	}
+	,onUp: function() {
+		this.down = false;
+		this.lastUp = this.digitalInput.now;
+		haxe_Log.trace("up " + this.code,{ fileName : "DigitalInputData.hx", lineNumber : 30, className : "glaze.util.DigitalInputData", methodName : "onUp"});
+	}
+	,justDown: function() {
+		haxe_Log.trace(this.lastDown,{ fileName : "DigitalInputData.hx", lineNumber : 36, className : "glaze.util.DigitalInputData", methodName : "justDown", customParams : [this.digitalInput.now]});
+		return this.lastDown == this.digitalInput.now;
+	}
+	,isDown: function() {
+		return this.down;
+	}
+	,downDuration: function() {
+		if(this.down) return this.digitalInput.now - this.lastDown; else return 0;
+	}
+	,justUp: function() {
+		return this.lastUp == this.digitalInput.now;
+	}
+	,isUp: function() {
+		return !this.down;
+	}
+	,upDuration: function() {
+		if(!this.down) return this.digitalInput.now - this.lastUp; else return 0;
+	}
+	,__class__: glaze_util_DigitalInputData
 };
 var glaze_util_GameLoop = function() {
 	this.isRunning = false;
@@ -1339,7 +1461,7 @@ glaze_util_GameLoop.prototype = {
 	update: function(timestamp) {
 		this.delta = timestamp - this.prevAnimationTime;
 		this.prevAnimationTime = timestamp;
-		if(this.updateFunc != null) this.updateFunc(16.6666666666666679);
+		if(this.updateFunc != null) this.updateFunc(16.6666666666666679,Math.floor(timestamp));
 		this.rafID = window.requestAnimationFrame($bind(this,this.update));
 		return false;
 	}
@@ -1488,6 +1610,11 @@ var haxe__$Int64__$_$_$Int64 = function(high,low) {
 haxe__$Int64__$_$_$Int64.__name__ = true;
 haxe__$Int64__$_$_$Int64.prototype = {
 	__class__: haxe__$Int64__$_$_$Int64
+};
+var haxe_Log = function() { };
+haxe_Log.__name__ = true;
+haxe_Log.trace = function(v,infos) {
+	js_Boot.__trace(v,infos);
 };
 var haxe_crypto_Adler32 = function() {
 	this.a1 = 1;
@@ -2291,6 +2418,25 @@ js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
 });
 var js_Boot = function() { };
 js_Boot.__name__ = true;
+js_Boot.__unhtml = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+};
+js_Boot.__trace = function(v,i) {
+	var msg;
+	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
+	msg += js_Boot.__string_rec(v,"");
+	if(i != null && i.customParams != null) {
+		var _g = 0;
+		var _g1 = i.customParams;
+		while(_g < _g1.length) {
+			var v1 = _g1[_g];
+			++_g;
+			msg += "," + js_Boot.__string_rec(v1,"");
+		}
+	}
+	var d;
+	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js_Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
+};
 js_Boot.getClass = function(o) {
 	if((o instanceof Array) && o.__enum__ == null) return Array; else {
 		var cl = o.__class__;
@@ -2625,7 +2771,7 @@ minicanvas_MiniCanvas.create = function(width,height,scaleMode) {
 minicanvas_MiniCanvas.prototype = {
 	display: function(name) {
 		this.deltaTime = performance.now() - this.startTime;
-		if(!minicanvas_MiniCanvas.displayGenerationTime) console.log("generated \"" + name + "\" in " + thx_Floats.roundTo(this.deltaTime,2) + "ms");
+		if(!minicanvas_MiniCanvas.displayGenerationTime) haxe_Log.trace("generated \"" + name + "\" in " + thx_Floats.roundTo(this.deltaTime,2) + "ms",{ fileName : "MiniCanvas.hx", lineNumber : 53, className : "minicanvas.MiniCanvas", methodName : "display"});
 		this.nativeDisplay(name);
 		return this;
 	}

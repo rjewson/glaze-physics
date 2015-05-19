@@ -43,7 +43,7 @@ class CharacterController
             controlForce.y -= JUMP_FORCE/5;
         }
 
-        if (jumping&&input.Released(87)) {
+        if ((jumping&&input.Released(87))||(body.lastNormal.y>0)) {
             jumping = false;
         }
 

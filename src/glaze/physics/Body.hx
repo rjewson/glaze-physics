@@ -6,6 +6,7 @@ import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Contact;
 import glaze.geom.AABB;
 import glaze.geom.BFBB;
+import glaze.physics.collision.Filter;
 
 class Body 
 {
@@ -30,6 +31,7 @@ class Body
     public var aabb:AABB = new AABB();
     public var bfproxy:BFProxy = new BFProxy();
     public var material:Material;
+    public var filter:Filter;
 
     public var forces:Vector2 = new Vector2();
     private var accumulatedForces:Vector2 = new Vector2();
@@ -52,13 +54,15 @@ class Body
 
     public var debug:Int = 0;    
 
-    public function new(w:Float,h:Float,material:Material) {
+    public function new(w:Float,h:Float,material:Material,filter:Filter=null) {
         aabb.extents.setTo(w,h);
         this.material = material;
+        this.filter = filter;
         aabb.position = this.position;
         setMass(1);
 
         bfproxy.body = this;
+        bfproxy.filter = this.filter;
         bfproxy.aabb = aabb;
         bfproxy.isStatic = false;
     }

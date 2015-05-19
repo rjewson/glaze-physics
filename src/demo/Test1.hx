@@ -1,6 +1,7 @@
 package demo;
 
 import glaze.physics.collision.BFProxy;
+import glaze.physics.collision.Filter;
 import glaze.physics.collision.Map;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Ray;
@@ -13,6 +14,7 @@ import glaze.physics.Body;
 import minicanvas.MiniCanvas;
 import glaze.util.GameLoop;
 import glaze.util.DigitalInput;
+import glaze.util.DigitalInput2;
 
 class Test1 
 {
@@ -23,11 +25,13 @@ class Test1
     public var loop:GameLoop;
     public var canvas:MiniCanvas;
     public var input:DigitalInput;
+    public var input2:DigitalInput2;
     public var engine:Engine;
 
     public var player:Body;
     public var ray:Ray;
     public var mat1:Material;
+    public var playerFilter:Filter;
 
     public var characterController:CharacterController;
 
@@ -60,9 +64,14 @@ class Test1
     public function setup() {
         canvas = MiniCanvas.create(640,640);
         canvas.display("basic example");
+        var rect = canvas.canvas.getBoundingClientRect();
 
         input = new DigitalInput();
-        input.InputTarget(Browser.document,new Vector2());
+        input.InputTarget(Browser.document,new Vector2(rect.left,rect.top));
+        trace(rect.x,rect.y);
+        // input2 = new DigitalInput2();
+        // input2.InputTarget(Browser.document,new Vector2(rect.x,rect.y));
+
 
         // Browser.document.getElementById("stopbutton");
 
@@ -82,8 +91,10 @@ class Test1
     public function customSetup() {
 
         mat1 = new Material();
+        playerFilter = new Filter();
+        playerFilter.groupIndex = 1;
 
-        player = new Body(20,45,mat1);
+        player = new Body(20,45,mat1,playerFilter);
         player.position.setTo(200,200);
         player.maxScalarVelocity = 0;
         player.maxVelocity.setTo(160,1000);
@@ -102,6 +113,8 @@ class Test1
         engine.broadphase.addProxy(water);
         
         ray = new Ray();
+
+        var di2 = new glaze.util.DigitalInput2();
     }
 
     public function cb(a:BFProxy,b:BFProxy,c:Contact) {
@@ -110,10 +123,10 @@ class Test1
         b.body.addForce(new Vector2(0,-area/100));
     }
 
-    public function update(delta:Float) {
-
+    public function update(delta:Float,now:Int) {
         debugGridItemsCount = 0;
         input.Update(0,0);
+        //input2.Update(now,0,0);
         ray.hit=false;
         processInput();
         engine.update(delta);
@@ -136,10 +149,12 @@ class Test1
         if (search) searchArea();
         if (debug) fireBullet(20);
 
+        // trace(input2.GetInputData(32).justDown());
+
     }
 
     public function fireBullet(debugCount:Int = 0) {
-        var bullet = new Body(5,5,mat1);
+        var bullet = new Body(5,5,mat1,playerFilter);
         bullet.setMass(0.03);
         bullet.setBounces(3);
         bullet.position.setTo(player.position.x,player.position.y);
