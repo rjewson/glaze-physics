@@ -1,4 +1,4 @@
-package demo;
+package ;
 
 import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Filter;
@@ -6,17 +6,17 @@ import glaze.physics.collision.Map;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Ray;
 import glaze.physics.Material;
-import glaze.util.CharacterController;
+import util.CharacterController;
 import js.Browser;
 import glaze.Engine;
 import glaze.geom.Vector2;
 import glaze.physics.Body;
 import minicanvas.MiniCanvas;
-import glaze.util.GameLoop;
-import glaze.util.DigitalInput;
-import glaze.util.DigitalInput2;
+import util.GameLoop;
+import util.DigitalInput;
+import util.DigitalInput2;
 
-class Test1 
+class Demo 
 {
 
     // public static inline var mapData:String = "eJxjZGBgYKQyphaglXnUMnOw+Jfe8UHt8KOWmdT2O7XT/2BJL0PJPHLilFg7R6p51MQAVwMAbQ==";
@@ -114,7 +114,7 @@ class Test1
         
         ray = new Ray();
 
-        var di2 = new glaze.util.DigitalInput2();
+        var di2 = new util.DigitalInput2();
     }
 
     public function cb(a:BFProxy,b:BFProxy,c:Contact) {
@@ -274,5 +274,15 @@ class Test1
             canvas.line(ray.origin.x,ray.origin.y,ray.contact.position.x,ray.contact.position.y,1, '#00ff00' );
         }
     }
+
+    public static function main() {
+        var demo = new Demo();
+        Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
+            demo.loop.stop();
+        });
+        Browser.document.getElementById("startbutton").addEventListener("click",function(event){
+            demo.loop.start();
+        });
+    }   
 
 }

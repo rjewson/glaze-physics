@@ -1,0 +1,13 @@
+{
+  "name": "glaze2",
+  "url": "https://github.com/rjewson/glaze2",
+  "license": "MIT",
+  "classPath": "src",
+  "tags": ["physics", "game", "platform"],
+  "description": "Library for game physics.",
+  "releasenote": "",
+  "version": "0.1.0",
+  "contributors": ["rjewson"],
+  "dependencies": {
+  }
+}

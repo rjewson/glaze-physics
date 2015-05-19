@@ -1,5 +1,5 @@
 
-package glaze.util;
+package util;
 
 class DigitalInputData 
 {

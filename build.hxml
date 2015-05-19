@@ -1,7 +1,8 @@
 -js bin/script.js
+-cp demo
 -cp src
 -lib minicanvas
--main Main
+-main Demo
 -debug
 #-D analyzer
 -cmd osascript bin/refreshTab

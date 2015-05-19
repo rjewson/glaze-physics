@@ -1,6 +1,6 @@
-package glaze.util;
+package util;
 
-import glaze.util.DigitalInputData;
+import util.DigitalInputData;
 import js.html.Event;
 import js.html.EventTarget;
 import glaze.geom.Vector2;

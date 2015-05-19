@@ -1,4 +1,4 @@
-package glaze.util;
+package util;
 
 import js.Browser;
 

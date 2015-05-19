@@ -5,6 +5,180 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
+var Demo = function() {
+	this.staticTests();
+	this.setup();
+	this.loop.start();
+};
+Demo.__name__ = true;
+Demo.main = function() {
+	var demo = new Demo();
+	window.document.getElementById("stopbutton").addEventListener("click",function(event) {
+		demo.loop.stop();
+	});
+	window.document.getElementById("startbutton").addEventListener("click",function(event1) {
+		demo.loop.start();
+	});
+};
+Demo.prototype = {
+	staticTests: function() {
+		var pos1 = new glaze_geom_Vector2(100,100);
+		var extents1 = new glaze_geom_Vector2(10,10);
+		var pos2 = new glaze_geom_Vector2(150,100);
+		var extents2 = new glaze_geom_Vector2(10,10);
+		var delta2 = new glaze_geom_Vector2(-31,0);
+		var contact = new glaze_physics_collision_Contact();
+		var result;
+		result = glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(pos1,extents1,pos2,extents2,delta2,contact);
+	}
+	,setup: function() {
+		this.canvas = minicanvas_MiniCanvas.create(640,640);
+		this.canvas.display("basic example");
+		var rect = this.canvas.canvas.getBoundingClientRect();
+		this.input = new util_DigitalInput();
+		this.input.InputTarget(window.document,new glaze_geom_Vector2(rect.left,rect.top));
+		haxe_Log.trace(rect.x,{ fileName : "Demo.hx", lineNumber : 71, className : "Demo", methodName : "setup", customParams : [rect.y]});
+		var mapData = new glaze_ds_Bytes2D(20,20,32,4,glaze_ds_Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx"));
+		this.map = new glaze_physics_collision_Map(mapData);
+		this.map.debug = $bind(this,this.debugGrid);
+		this.debugGridItems = [];
+		this.engine = new glaze_Engine(this.map);
+		this.loop = new util_GameLoop();
+		this.loop.updateFunc = $bind(this,this.update);
+		this.customSetup();
+	}
+	,customSetup: function() {
+		this.mat1 = new glaze_physics_Material();
+		this.playerFilter = new glaze_physics_collision_Filter();
+		this.playerFilter.groupIndex = 1;
+		this.player = new glaze_physics_Body(20,45,this.mat1,this.playerFilter);
+		this.player.position.setTo(200,200);
+		this.player.maxScalarVelocity = 0;
+		this.player.maxVelocity.setTo(160,1000);
+		this.engine.addBody(this.player);
+		this.characterController = new util_CharacterController(this.input,this.player);
+		var box = new glaze_physics_Body(10,10,this.mat1);
+		box.position.setTo(150,200);
+		this.engine.addBody(box);
+		var water = glaze_physics_collision_BFProxy.CreateStaticFeature(464,544,144,64);
+		water.contactCallback = $bind(this,this.cb);
+		water.isSensor = true;
+		this.engine.broadphase.addProxy(water);
+		this.ray = new glaze_physics_collision_Ray();
+		var di2 = new util_DigitalInput2();
+	}
+	,cb: function(a,b,c) {
+		var area = a.aabb.overlapArea(b.aabb);
+		b.body.damping = 0.95;
+		b.body.addForce(new glaze_geom_Vector2(0,-area / 100));
+	}
+	,update: function(delta,now) {
+		this.debugGridItemsCount = 0;
+		this.input.Update(0,0);
+		this.ray.hit = false;
+		this.processInput();
+		this.engine.update(delta);
+		this.debugRender();
+		this.render();
+	}
+	,processInput: function() {
+		this.characterController.update();
+		var fire = this.input.JustPressed(32);
+		var search = this.input.JustPressed(71);
+		var debug = this.input.keyMap[72] > 0;
+		var ray = this.input.keyMap[82] > 0;
+		if(fire) this.fireBullet();
+		if(ray) this.shootRay();
+		if(search) this.searchArea();
+		if(debug) this.fireBullet(20);
+	}
+	,fireBullet: function(debugCount) {
+		if(debugCount == null) debugCount = 0;
+		var bullet = new glaze_physics_Body(5,5,this.mat1,this.playerFilter);
+		bullet.setMass(0.03);
+		bullet.setBounces(3);
+		bullet.position.setTo(this.player.position.x,this.player.position.y);
+		bullet.isBullet = true;
+		bullet.debug = debugCount;
+		var vel = this.input.mousePosition.clone();
+		vel.minusEquals(this.player.position);
+		vel.normalize();
+		vel.multEquals(5000);
+		bullet.velocity.setTo(vel.x,vel.y);
+		this.engine.addBody(bullet);
+	}
+	,shootRay: function() {
+		this.ray.initalize(this.player.position,this.input.mousePosition,1000,$bind(this,this.rayTest));
+		this.engine.broadphase.CastRay(this.ray,null,true,false);
+	}
+	,searchArea: function() {
+		var area = new glaze_geom_AABB();
+		area.position.copy(this.player.position);
+		area.extents.setTo(100,100);
+		var count = 0;
+		this.engine.broadphase.QueryArea(area,function(bf) {
+			count++;
+		});
+		haxe_Log.trace("Found:" + count,{ fileName : "Demo.hx", lineNumber : 188, className : "Demo", methodName : "searchArea"});
+	}
+	,rayTest: function(proxy) {
+		if(proxy.body != null && proxy.body == this.player) return -1; else return 0;
+	}
+	,debugRender: function() {
+	}
+	,debugGrid: function(x,y) {
+		var i = this.debugGridItemsCount * 2;
+		this.debugGridItems[i] = x;
+		this.debugGridItems[i + 1] = y;
+		this.debugGridItemsCount += 1;
+	}
+	,render: function() {
+		this.canvas.clear();
+		var cellSize = this.map.data.cellSize;
+		var halfCellSize = cellSize / 2;
+		var _g1 = 0;
+		var _g = this.map.data.height;
+		while(_g1 < _g) {
+			var y = _g1++;
+			var _g3 = 0;
+			var _g2 = this.map.data.width;
+			while(_g3 < _g2) {
+				var x = _g3++;
+				var cell = this.map.data.get(x,y,0);
+				if(cell > 0) {
+					var xp = x * cellSize;
+					var yp = y * cellSize;
+					this.canvas.rect(xp,yp,xp + cellSize,yp + cellSize,1,255);
+				}
+			}
+		}
+		var _g4 = 0;
+		var _g11 = this.engine.dynamicBodies;
+		while(_g4 < _g11.length) {
+			var body = _g11[_g4];
+			++_g4;
+			if(body.isBullet) this.canvas.line(body.position.x,body.position.y,body.previousPosition.x,body.previousPosition.y,3,-16711681);
+			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?-16711681:65535);
+		}
+		var _g5 = 0;
+		var _g12 = this.engine.broadphase.staticProxies;
+		while(_g5 < _g12.length) {
+			var proxy = _g12[_g5];
+			++_g5;
+			this.canvas.rect(proxy.aabb.get_l(),proxy.aabb.get_t(),proxy.aabb.get_r(),proxy.aabb.get_b(),1,16711935);
+		}
+		var _g13 = 0;
+		var _g6 = this.debugGridItemsCount;
+		while(_g13 < _g6) {
+			var i = _g13++;
+			var xp1 = this.debugGridItems[i * 2] * cellSize;
+			var yp1 = this.debugGridItems[i * 2 + 1] * cellSize;
+			this.canvas.rect(xp1,yp1,xp1 + cellSize,yp1 + cellSize,3,-16776961);
+		}
+		if(this.ray.hit) this.canvas.line(this.ray.origin.x,this.ray.origin.y,this.ray.contact.position.x,this.ray.contact.position.y,1,thx_color__$RGBA_RGBA_$Impl_$.fromString("#00ff00"));
+	}
+	,__class__: Demo
+};
 var EReg = function(r,opt) {
 	opt = opt.split("u").join("");
 	this.r = new RegExp(r,opt);
@@ -110,17 +284,6 @@ HxOverrides.iter = function(a) {
 		return this.arr[this.cur++];
 	}};
 };
-var Main = function() { };
-Main.__name__ = true;
-Main.main = function() {
-	var demo1 = new demo_Test1();
-	window.document.getElementById("stopbutton").addEventListener("click",function(event) {
-		demo1.loop.stop();
-	});
-	window.document.getElementById("startbutton").addEventListener("click",function(event1) {
-		demo1.loop.start();
-	});
-};
 Math.__name__ = true;
 var Std = function() { };
 Std.__name__ = true;
@@ -190,171 +353,6 @@ StringTools.hex = function(n,digits) {
 };
 StringTools.fastCodeAt = function(s,index) {
 	return s.charCodeAt(index);
-};
-var demo_Test1 = function() {
-	this.staticTests();
-	this.setup();
-	this.loop.start();
-};
-demo_Test1.__name__ = true;
-demo_Test1.prototype = {
-	staticTests: function() {
-		var pos1 = new glaze_geom_Vector2(100,100);
-		var extents1 = new glaze_geom_Vector2(10,10);
-		var pos2 = new glaze_geom_Vector2(150,100);
-		var extents2 = new glaze_geom_Vector2(10,10);
-		var delta2 = new glaze_geom_Vector2(-31,0);
-		var contact = new glaze_physics_collision_Contact();
-		var result;
-		result = glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(pos1,extents1,pos2,extents2,delta2,contact);
-	}
-	,setup: function() {
-		this.canvas = minicanvas_MiniCanvas.create(640,640);
-		this.canvas.display("basic example");
-		var rect = this.canvas.canvas.getBoundingClientRect();
-		this.input = new glaze_util_DigitalInput();
-		this.input.InputTarget(window.document,new glaze_geom_Vector2(rect.left,rect.top));
-		haxe_Log.trace(rect.x,{ fileName : "Test1.hx", lineNumber : 71, className : "demo.Test1", methodName : "setup", customParams : [rect.y]});
-		var mapData = new glaze_ds_Bytes2D(20,20,32,4,glaze_ds_Bytes2D.uncompressData("eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx"));
-		this.map = new glaze_physics_collision_Map(mapData);
-		this.map.debug = $bind(this,this.debugGrid);
-		this.debugGridItems = [];
-		this.engine = new glaze_Engine(this.map);
-		this.loop = new glaze_util_GameLoop();
-		this.loop.updateFunc = $bind(this,this.update);
-		this.customSetup();
-	}
-	,customSetup: function() {
-		this.mat1 = new glaze_physics_Material();
-		this.playerFilter = new glaze_physics_collision_Filter();
-		this.playerFilter.groupIndex = 1;
-		this.player = new glaze_physics_Body(20,45,this.mat1,this.playerFilter);
-		this.player.position.setTo(200,200);
-		this.player.maxScalarVelocity = 0;
-		this.player.maxVelocity.setTo(160,1000);
-		this.engine.addBody(this.player);
-		this.characterController = new glaze_util_CharacterController(this.input,this.player);
-		var box = new glaze_physics_Body(10,10,this.mat1);
-		box.position.setTo(150,200);
-		this.engine.addBody(box);
-		var water = glaze_physics_collision_BFProxy.CreateStaticFeature(464,544,144,64);
-		water.contactCallback = $bind(this,this.cb);
-		water.isSensor = true;
-		this.engine.broadphase.addProxy(water);
-		this.ray = new glaze_physics_collision_Ray();
-		var di2 = new glaze_util_DigitalInput2();
-	}
-	,cb: function(a,b,c) {
-		var area = a.aabb.overlapArea(b.aabb);
-		b.body.damping = 0.95;
-		b.body.addForce(new glaze_geom_Vector2(0,-area / 100));
-	}
-	,update: function(delta,now) {
-		this.debugGridItemsCount = 0;
-		this.input.Update(0,0);
-		this.ray.hit = false;
-		this.processInput();
-		this.engine.update(delta);
-		this.debugRender();
-		this.render();
-	}
-	,processInput: function() {
-		this.characterController.update();
-		var fire = this.input.JustPressed(32);
-		var search = this.input.JustPressed(71);
-		var debug = this.input.keyMap[72] > 0;
-		var ray = this.input.keyMap[82] > 0;
-		if(fire) this.fireBullet();
-		if(ray) this.shootRay();
-		if(search) this.searchArea();
-		if(debug) this.fireBullet(20);
-	}
-	,fireBullet: function(debugCount) {
-		if(debugCount == null) debugCount = 0;
-		var bullet = new glaze_physics_Body(5,5,this.mat1,this.playerFilter);
-		bullet.setMass(0.03);
-		bullet.setBounces(3);
-		bullet.position.setTo(this.player.position.x,this.player.position.y);
-		bullet.isBullet = true;
-		bullet.debug = debugCount;
-		var vel = this.input.mousePosition.clone();
-		vel.minusEquals(this.player.position);
-		vel.normalize();
-		vel.multEquals(5000);
-		bullet.velocity.setTo(vel.x,vel.y);
-		this.engine.addBody(bullet);
-	}
-	,shootRay: function() {
-		this.ray.initalize(this.player.position,this.input.mousePosition,1000,$bind(this,this.rayTest));
-		this.engine.broadphase.CastRay(this.ray,null,true,false);
-	}
-	,searchArea: function() {
-		var area = new glaze_geom_AABB();
-		area.position.copy(this.player.position);
-		area.extents.setTo(100,100);
-		var count = 0;
-		this.engine.broadphase.QueryArea(area,function(bf) {
-			count++;
-		});
-		haxe_Log.trace("Found:" + count,{ fileName : "Test1.hx", lineNumber : 188, className : "demo.Test1", methodName : "searchArea"});
-	}
-	,rayTest: function(proxy) {
-		if(proxy.body != null && proxy.body == this.player) return -1; else return 0;
-	}
-	,debugRender: function() {
-	}
-	,debugGrid: function(x,y) {
-		var i = this.debugGridItemsCount * 2;
-		this.debugGridItems[i] = x;
-		this.debugGridItems[i + 1] = y;
-		this.debugGridItemsCount += 1;
-	}
-	,render: function() {
-		this.canvas.clear();
-		var cellSize = this.map.data.cellSize;
-		var halfCellSize = cellSize / 2;
-		var _g1 = 0;
-		var _g = this.map.data.height;
-		while(_g1 < _g) {
-			var y = _g1++;
-			var _g3 = 0;
-			var _g2 = this.map.data.width;
-			while(_g3 < _g2) {
-				var x = _g3++;
-				var cell = this.map.data.get(x,y,0);
-				if(cell > 0) {
-					var xp = x * cellSize;
-					var yp = y * cellSize;
-					this.canvas.rect(xp,yp,xp + cellSize,yp + cellSize,1,255);
-				}
-			}
-		}
-		var _g4 = 0;
-		var _g11 = this.engine.dynamicBodies;
-		while(_g4 < _g11.length) {
-			var body = _g11[_g4];
-			++_g4;
-			if(body.isBullet) this.canvas.line(body.position.x,body.position.y,body.previousPosition.x,body.previousPosition.y,3,-16711681);
-			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?-16711681:65535);
-		}
-		var _g5 = 0;
-		var _g12 = this.engine.broadphase.staticProxies;
-		while(_g5 < _g12.length) {
-			var proxy = _g12[_g5];
-			++_g5;
-			this.canvas.rect(proxy.aabb.get_l(),proxy.aabb.get_t(),proxy.aabb.get_r(),proxy.aabb.get_b(),1,16711935);
-		}
-		var _g13 = 0;
-		var _g6 = this.debugGridItemsCount;
-		while(_g13 < _g6) {
-			var i = _g13++;
-			var xp1 = this.debugGridItems[i * 2] * cellSize;
-			var yp1 = this.debugGridItems[i * 2 + 1] * cellSize;
-			this.canvas.rect(xp1,yp1,xp1 + cellSize,yp1 + cellSize,3,-16776961);
-		}
-		if(this.ray.hit) this.canvas.line(this.ray.origin.x,this.ray.origin.y,this.ray.contact.position.x,this.ray.contact.position.y,1,thx_color__$RGBA_RGBA_$Impl_$.fromString("#00ff00"));
-	}
-	,__class__: demo_Test1
 };
 var glaze_Engine = function(map) {
 	this.map = map;
@@ -1253,230 +1251,6 @@ glaze_physics_collision_Ray.prototype = {
 		}
 	}
 	,__class__: glaze_physics_collision_Ray
-};
-var glaze_util_CharacterController = function(input,body) {
-	this.jumping = false;
-	this.jumpUnit = new glaze_geom_Vector2();
-	this.controlForce = new glaze_geom_Vector2();
-	this.input = input;
-	this.body = body;
-};
-glaze_util_CharacterController.__name__ = true;
-glaze_util_CharacterController.prototype = {
-	update: function() {
-		this.controlForce.setTo(.0,.0);
-		var left = this.input.PressedDuration(65);
-		var right = this.input.PressedDuration(68);
-		var up = this.input.JustPressed(87);
-		var upDuration = this.input.PressedDuration(87);
-		var down = this.input.PressedDuration(83);
-		if(!this.jumping && this.body.onGround && up) {
-			this.jumping = true;
-			this.controlForce.y -= 200.;
-		}
-		if(this.jumping && this.input.keyMap[87] == 0 || this.body.lastNormal.y > 0) this.jumping = false;
-		if(this.body.onGround && !this.body.onGroundPrev) {
-		}
-		if(this.body.onGround) {
-			if(left > 0) this.controlForce.x -= 20;
-			if(right > 0) this.controlForce.x += 20;
-			if(up) this.controlForce.y -= 200.;
-		} else {
-			if(left > 0) this.controlForce.x -= 10;
-			if(right > 0) this.controlForce.x += 10;
-			var d = 10;
-			if(this.jumping && upDuration > 1 && upDuration < d) this.controlForce.y -= 800 / d;
-		}
-		this.body.addForce(this.controlForce);
-	}
-	,__class__: glaze_util_CharacterController
-};
-var glaze_util_DigitalInput = function() {
-	this.keyMap = [];
-	var _g = 0;
-	while(_g < 255) {
-		var i = _g++;
-		this.keyMap[i] = 0;
-	}
-	this.mousePosition = new glaze_geom_Vector2();
-	this.mousePreviousPosition = new glaze_geom_Vector2();
-	this.mouseOffset = new glaze_geom_Vector2();
-	this.frameRef = 2;
-};
-glaze_util_DigitalInput.__name__ = true;
-glaze_util_DigitalInput.prototype = {
-	InputTarget: function(target,inputCorrection) {
-		this.target = target;
-		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
-		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
-		target.addEventListener("mousedown",$bind(this,this.MouseDown),false);
-		target.addEventListener("mouseup",$bind(this,this.MouseUp),false);
-		target.addEventListener("mousemove",$bind(this,this.MouseMove),false);
-		this.inputCorrection = inputCorrection;
-	}
-	,Update: function(x,y) {
-		this.mouseOffset.x = x;
-		this.mouseOffset.y = y;
-		this.frameRef++;
-	}
-	,KeyDown: function(event) {
-		if(this.keyMap[event.keyCode] == 0) this.keyMap[event.keyCode] = this.frameRef;
-		event.preventDefault();
-	}
-	,KeyUp: function(event) {
-		this.keyMap[event.keyCode] = 0;
-		event.preventDefault();
-	}
-	,MouseDown: function(event) {
-		this.keyMap[200] = this.frameRef;
-		event.preventDefault();
-	}
-	,MouseUp: function(event) {
-		this.keyMap[200] = 0;
-		event.preventDefault();
-	}
-	,MouseMove: function(event) {
-		this.mousePreviousPosition.x = this.mousePosition.x;
-		this.mousePreviousPosition.y = this.mousePosition.y;
-		this.mousePosition.x = event.clientX - this.inputCorrection.x;
-		this.mousePosition.y = event.clientY - this.inputCorrection.y;
-		event.preventDefault();
-	}
-	,Pressed: function(keyCode) {
-		return this.keyMap[keyCode] > 0;
-	}
-	,JustPressed: function(keyCode) {
-		return this.keyMap[keyCode] == this.frameRef - 1;
-	}
-	,PressedDuration: function(keyCode) {
-		var duration = this.keyMap[keyCode];
-		if(duration > 0) return this.frameRef - duration; else return -1;
-	}
-	,Released: function(keyCode) {
-		return this.keyMap[keyCode] == 0;
-	}
-	,__class__: glaze_util_DigitalInput
-};
-var glaze_util_DigitalInput2 = function() {
-	this.inputData = [];
-	var _g = 0;
-	while(_g < 255) {
-		var i = _g++;
-		this.inputData[i] = new glaze_util_DigitalInputData(this,i);
-	}
-	this.mousePosition = new glaze_geom_Vector2();
-	this.mousePreviousPosition = new glaze_geom_Vector2();
-	this.mouseOffset = new glaze_geom_Vector2();
-	this.frameRef = 2;
-};
-glaze_util_DigitalInput2.__name__ = true;
-glaze_util_DigitalInput2.prototype = {
-	InputTarget: function(target,inputCorrection) {
-		this.target = target;
-		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
-		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
-		target.addEventListener("mousedown",$bind(this,this.MouseDown),false);
-		target.addEventListener("mouseup",$bind(this,this.MouseUp),false);
-		target.addEventListener("mousemove",$bind(this,this.MouseMove),false);
-		this.inputCorrection = inputCorrection;
-	}
-	,Update: function(now,x,y) {
-		this.mouseOffset.x = x;
-		this.mouseOffset.y = y;
-		this.now = Math.round(now);
-	}
-	,GetInputData: function(keyCode) {
-		return this.inputData[keyCode];
-	}
-	,KeyDown: function(event) {
-		this.inputData[event.keyCode].onDown();
-		event.preventDefault();
-	}
-	,KeyUp: function(event) {
-		this.inputData[event.keyCode].onUp();
-		event.preventDefault();
-	}
-	,MouseDown: function(event) {
-		this.inputData[200].onDown();
-		event.preventDefault();
-	}
-	,MouseUp: function(event) {
-		this.inputData[200].onUp();
-		event.preventDefault();
-	}
-	,MouseMove: function(event) {
-		this.mousePreviousPosition.x = this.mousePosition.x;
-		this.mousePreviousPosition.y = this.mousePosition.y;
-		this.mousePosition.x = event.clientX;
-		this.mousePosition.y = event.clientY;
-		event.preventDefault();
-	}
-	,__class__: glaze_util_DigitalInput2
-};
-var glaze_util_DigitalInputData = function(digitalInput,code) {
-	this.lastUp = 0;
-	this.lastDown = 0;
-	this.code = 0;
-	this.digitalInput = digitalInput;
-	this.code = code;
-};
-glaze_util_DigitalInputData.__name__ = true;
-glaze_util_DigitalInputData.prototype = {
-	onDown: function() {
-		this.down = true;
-		this.lastDown = this.digitalInput.now;
-		haxe_Log.trace("down " + this.code + " " + this.lastDown,{ fileName : "DigitalInputData.hx", lineNumber : 24, className : "glaze.util.DigitalInputData", methodName : "onDown"});
-	}
-	,onUp: function() {
-		this.down = false;
-		this.lastUp = this.digitalInput.now;
-		haxe_Log.trace("up " + this.code,{ fileName : "DigitalInputData.hx", lineNumber : 30, className : "glaze.util.DigitalInputData", methodName : "onUp"});
-	}
-	,justDown: function() {
-		haxe_Log.trace(this.lastDown,{ fileName : "DigitalInputData.hx", lineNumber : 36, className : "glaze.util.DigitalInputData", methodName : "justDown", customParams : [this.digitalInput.now]});
-		return this.lastDown == this.digitalInput.now;
-	}
-	,isDown: function() {
-		return this.down;
-	}
-	,downDuration: function() {
-		if(this.down) return this.digitalInput.now - this.lastDown; else return 0;
-	}
-	,justUp: function() {
-		return this.lastUp == this.digitalInput.now;
-	}
-	,isUp: function() {
-		return !this.down;
-	}
-	,upDuration: function() {
-		if(!this.down) return this.digitalInput.now - this.lastUp; else return 0;
-	}
-	,__class__: glaze_util_DigitalInputData
-};
-var glaze_util_GameLoop = function() {
-	this.isRunning = false;
-};
-glaze_util_GameLoop.__name__ = true;
-glaze_util_GameLoop.prototype = {
-	update: function(timestamp) {
-		this.delta = timestamp - this.prevAnimationTime;
-		this.prevAnimationTime = timestamp;
-		if(this.updateFunc != null) this.updateFunc(16.6666666666666679,Math.floor(timestamp));
-		this.rafID = window.requestAnimationFrame($bind(this,this.update));
-		return false;
-	}
-	,start: function() {
-		if(this.isRunning == true) return;
-		this.isRunning = true;
-		this.prevAnimationTime = this.animationStartTimestamp = window.performance.now();
-		this.rafID = window.requestAnimationFrame($bind(this,this.update));
-	}
-	,stop: function() {
-		if(this.isRunning == false) return;
-		this.isRunning = false;
-		window.cancelAnimationFrame(this.rafID);
-	}
-	,__class__: glaze_util_GameLoop
 };
 var haxe_StackItem = { __ename__ : true, __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
 haxe_StackItem.CFunction = ["CFunction",0];
@@ -6999,6 +6773,230 @@ thx_error_NullArgument.__super__ = thx_Error;
 thx_error_NullArgument.prototype = $extend(thx_Error.prototype,{
 	__class__: thx_error_NullArgument
 });
+var util_CharacterController = function(input,body) {
+	this.jumping = false;
+	this.jumpUnit = new glaze_geom_Vector2();
+	this.controlForce = new glaze_geom_Vector2();
+	this.input = input;
+	this.body = body;
+};
+util_CharacterController.__name__ = true;
+util_CharacterController.prototype = {
+	update: function() {
+		this.controlForce.setTo(.0,.0);
+		var left = this.input.PressedDuration(65);
+		var right = this.input.PressedDuration(68);
+		var up = this.input.JustPressed(87);
+		var upDuration = this.input.PressedDuration(87);
+		var down = this.input.PressedDuration(83);
+		if(!this.jumping && this.body.onGround && up) {
+			this.jumping = true;
+			this.controlForce.y -= 200.;
+		}
+		if(this.jumping && this.input.keyMap[87] == 0 || this.body.lastNormal.y > 0) this.jumping = false;
+		if(this.body.onGround && !this.body.onGroundPrev) {
+		}
+		if(this.body.onGround) {
+			if(left > 0) this.controlForce.x -= 20;
+			if(right > 0) this.controlForce.x += 20;
+			if(up) this.controlForce.y -= 200.;
+		} else {
+			if(left > 0) this.controlForce.x -= 10;
+			if(right > 0) this.controlForce.x += 10;
+			var d = 10;
+			if(this.jumping && upDuration > 1 && upDuration < d) this.controlForce.y -= 800 / d;
+		}
+		this.body.addForce(this.controlForce);
+	}
+	,__class__: util_CharacterController
+};
+var util_DigitalInput = function() {
+	this.keyMap = [];
+	var _g = 0;
+	while(_g < 255) {
+		var i = _g++;
+		this.keyMap[i] = 0;
+	}
+	this.mousePosition = new glaze_geom_Vector2();
+	this.mousePreviousPosition = new glaze_geom_Vector2();
+	this.mouseOffset = new glaze_geom_Vector2();
+	this.frameRef = 2;
+};
+util_DigitalInput.__name__ = true;
+util_DigitalInput.prototype = {
+	InputTarget: function(target,inputCorrection) {
+		this.target = target;
+		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
+		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
+		target.addEventListener("mousedown",$bind(this,this.MouseDown),false);
+		target.addEventListener("mouseup",$bind(this,this.MouseUp),false);
+		target.addEventListener("mousemove",$bind(this,this.MouseMove),false);
+		this.inputCorrection = inputCorrection;
+	}
+	,Update: function(x,y) {
+		this.mouseOffset.x = x;
+		this.mouseOffset.y = y;
+		this.frameRef++;
+	}
+	,KeyDown: function(event) {
+		if(this.keyMap[event.keyCode] == 0) this.keyMap[event.keyCode] = this.frameRef;
+		event.preventDefault();
+	}
+	,KeyUp: function(event) {
+		this.keyMap[event.keyCode] = 0;
+		event.preventDefault();
+	}
+	,MouseDown: function(event) {
+		this.keyMap[200] = this.frameRef;
+		event.preventDefault();
+	}
+	,MouseUp: function(event) {
+		this.keyMap[200] = 0;
+		event.preventDefault();
+	}
+	,MouseMove: function(event) {
+		this.mousePreviousPosition.x = this.mousePosition.x;
+		this.mousePreviousPosition.y = this.mousePosition.y;
+		this.mousePosition.x = event.clientX - this.inputCorrection.x;
+		this.mousePosition.y = event.clientY - this.inputCorrection.y;
+		event.preventDefault();
+	}
+	,Pressed: function(keyCode) {
+		return this.keyMap[keyCode] > 0;
+	}
+	,JustPressed: function(keyCode) {
+		return this.keyMap[keyCode] == this.frameRef - 1;
+	}
+	,PressedDuration: function(keyCode) {
+		var duration = this.keyMap[keyCode];
+		if(duration > 0) return this.frameRef - duration; else return -1;
+	}
+	,Released: function(keyCode) {
+		return this.keyMap[keyCode] == 0;
+	}
+	,__class__: util_DigitalInput
+};
+var util_DigitalInput2 = function() {
+	this.inputData = [];
+	var _g = 0;
+	while(_g < 255) {
+		var i = _g++;
+		this.inputData[i] = new util_DigitalInputData(this,i);
+	}
+	this.mousePosition = new glaze_geom_Vector2();
+	this.mousePreviousPosition = new glaze_geom_Vector2();
+	this.mouseOffset = new glaze_geom_Vector2();
+	this.frameRef = 2;
+};
+util_DigitalInput2.__name__ = true;
+util_DigitalInput2.prototype = {
+	InputTarget: function(target,inputCorrection) {
+		this.target = target;
+		target.addEventListener("keydown",$bind(this,this.KeyDown),false);
+		target.addEventListener("keyup",$bind(this,this.KeyUp),false);
+		target.addEventListener("mousedown",$bind(this,this.MouseDown),false);
+		target.addEventListener("mouseup",$bind(this,this.MouseUp),false);
+		target.addEventListener("mousemove",$bind(this,this.MouseMove),false);
+		this.inputCorrection = inputCorrection;
+	}
+	,Update: function(now,x,y) {
+		this.mouseOffset.x = x;
+		this.mouseOffset.y = y;
+		this.now = Math.round(now);
+	}
+	,GetInputData: function(keyCode) {
+		return this.inputData[keyCode];
+	}
+	,KeyDown: function(event) {
+		this.inputData[event.keyCode].onDown();
+		event.preventDefault();
+	}
+	,KeyUp: function(event) {
+		this.inputData[event.keyCode].onUp();
+		event.preventDefault();
+	}
+	,MouseDown: function(event) {
+		this.inputData[200].onDown();
+		event.preventDefault();
+	}
+	,MouseUp: function(event) {
+		this.inputData[200].onUp();
+		event.preventDefault();
+	}
+	,MouseMove: function(event) {
+		this.mousePreviousPosition.x = this.mousePosition.x;
+		this.mousePreviousPosition.y = this.mousePosition.y;
+		this.mousePosition.x = event.clientX;
+		this.mousePosition.y = event.clientY;
+		event.preventDefault();
+	}
+	,__class__: util_DigitalInput2
+};
+var util_DigitalInputData = function(digitalInput,code) {
+	this.lastUp = 0;
+	this.lastDown = 0;
+	this.code = 0;
+	this.digitalInput = digitalInput;
+	this.code = code;
+};
+util_DigitalInputData.__name__ = true;
+util_DigitalInputData.prototype = {
+	onDown: function() {
+		this.down = true;
+		this.lastDown = this.digitalInput.now;
+		haxe_Log.trace("down " + this.code + " " + this.lastDown,{ fileName : "DigitalInputData.hx", lineNumber : 24, className : "util.DigitalInputData", methodName : "onDown"});
+	}
+	,onUp: function() {
+		this.down = false;
+		this.lastUp = this.digitalInput.now;
+		haxe_Log.trace("up " + this.code,{ fileName : "DigitalInputData.hx", lineNumber : 30, className : "util.DigitalInputData", methodName : "onUp"});
+	}
+	,justDown: function() {
+		haxe_Log.trace(this.lastDown,{ fileName : "DigitalInputData.hx", lineNumber : 36, className : "util.DigitalInputData", methodName : "justDown", customParams : [this.digitalInput.now]});
+		return this.lastDown == this.digitalInput.now;
+	}
+	,isDown: function() {
+		return this.down;
+	}
+	,downDuration: function() {
+		if(this.down) return this.digitalInput.now - this.lastDown; else return 0;
+	}
+	,justUp: function() {
+		return this.lastUp == this.digitalInput.now;
+	}
+	,isUp: function() {
+		return !this.down;
+	}
+	,upDuration: function() {
+		if(!this.down) return this.digitalInput.now - this.lastUp; else return 0;
+	}
+	,__class__: util_DigitalInputData
+};
+var util_GameLoop = function() {
+	this.isRunning = false;
+};
+util_GameLoop.__name__ = true;
+util_GameLoop.prototype = {
+	update: function(timestamp) {
+		this.delta = timestamp - this.prevAnimationTime;
+		this.prevAnimationTime = timestamp;
+		if(this.updateFunc != null) this.updateFunc(16.6666666666666679,Math.floor(timestamp));
+		this.rafID = window.requestAnimationFrame($bind(this,this.update));
+		return false;
+	}
+	,start: function() {
+		if(this.isRunning == true) return;
+		this.isRunning = true;
+		this.prevAnimationTime = this.animationStartTimestamp = window.performance.now();
+		this.rafID = window.requestAnimationFrame($bind(this,this.update));
+	}
+	,stop: function() {
+		if(this.isRunning == false) return;
+		this.isRunning = false;
+		window.cancelAnimationFrame(this.rafID);
+	}
+	,__class__: util_GameLoop
+};
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
@@ -7110,16 +7108,12 @@ if(typeof(scope.performance.now) == "undefined") {
 	};
 	scope.performance.now = now;
 }
-demo_Test1.mapData = "eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx";
+Demo.mapData = "eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx";
 glaze_geom_Vector2.ZERO_TOLERANCE = 1e-08;
 glaze_physics_collision_Intersect.epsilon = 1e-8;
 glaze_physics_collision_Map.CORRECTION = .0;
 glaze_physics_collision_Map.ROUNDDOWN = .01;
 glaze_physics_collision_Map.ROUNDUP = .5;
-glaze_util_CharacterController.WALK_FORCE = 20;
-glaze_util_CharacterController.AIR_CONTROL_FORCE = 10;
-glaze_util_CharacterController.JUMP_FORCE = 1000;
-glaze_util_CharacterController.MAX_AIR_HORIZONTAL_VELOCITY = 500;
 haxe_crypto_Base64.CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 haxe_crypto_Base64.BYTES = haxe_io_Bytes.ofString(haxe_crypto_Base64.CHARS);
 haxe_io_FPHelper.i64tmp = (function($this) {
@@ -7159,7 +7153,11 @@ thx_color__$Grey_Grey_$Impl_$.black = 0;
 thx_color__$Grey_Grey_$Impl_$.white = 1;
 thx_color_parse_ColorParser.parser = new thx_color_parse_ColorParser();
 thx_color_parse_ColorParser.isPureHex = new EReg("^([0-9a-f]{2}){3,4}$","i");
-Main.main();
+util_CharacterController.WALK_FORCE = 20;
+util_CharacterController.AIR_CONTROL_FORCE = 10;
+util_CharacterController.JUMP_FORCE = 1000;
+util_CharacterController.MAX_AIR_HORIZONTAL_VELOCITY = 500;
+Demo.main();
 })(typeof console != "undefined" ? console : {log:function(){}});
 
 //# sourceMappingURL=script.js.map
