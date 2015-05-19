@@ -15,29 +15,6 @@ class Intersect
     public function new() {
     }
 
-    public function Collide2(proxyA:BFProxy,proxyB:BFProxy):Bool {
-        
-        //Exit on static vs statics, they should never be sent but you never know
-        //Sensors dont trigger other sensors
-        if ((proxyA.isStatic && proxyB.isStatic) || (proxyA.isSensor && proxyB.isSensor))
-            return false;
-
-        //Do filtering
-        if (!Filter.CHECK(proxyA.filter,proxyB.filter))
-            return false;
-
-        var collided = false;
-
-        var collisionType = 0;
-        var responseType = 0;
-        var swap = false;
-
-        var dynamic_dynamic = (!proxyA.isStatic && !proxyB.isStatic);
-
-        return true;
-
-    }
-
     public function Collide(proxyA:BFProxy,proxyB:BFProxy):Bool {
         
         //Exit on static vs statics, they should never be sent but you never know
@@ -254,7 +231,6 @@ class Intersect
             }
         } else {
             if (StaticSegmentvsStaticAABB(aabb_position_A,aabb_extents_A,aabb_position_B,aabb_delta_B,aabb_extents_B.x,aabb_extents_B.y,contact)) {
-                //js.Lib.debug();
                 contact.time = Math.min(Math.max(contact.time-epsilon,0),1);
                 contact.sweepPosition.x = aabb_position_B.x + aabb_delta_B.x * contact.time;
                 contact.sweepPosition.y = aabb_position_B.y + aabb_delta_B.y * contact.time;

@@ -3,11 +3,8 @@ package glaze;
 
 import glaze.geom.Vector2;
 import glaze.physics.collision.BFProxy;
-import glaze.physics.collision.BruteforceBroadphase;
-import glaze.physics.collision.Map;
+import glaze.physics.collision.broadphase.IBroadphase;
 import glaze.physics.Body;
-import glaze.physics.collision.Contact;
-import glaze.physics.collision.Intersect;
 
 class Engine 
 {
@@ -15,50 +12,54 @@ class Engine
     public var dynamicBodies:Array<Body>;
     public var sleepingBodies:Array<Body>;
 
-    public var nf:Intersect;
-    public var broadphase:BruteforceBroadphase;
-
-    public var map:Map;
-
-    public var contact:Contact;
+    public var broadphase:IBroadphase;
 
     public var globalForce:Vector2;
+    public var globalDamping:Float;
 
-    public function new(map:Map) {
-        this.map = map;
+    public var pps : Float;
+        
+    public var msPerPhysics:Float;
+    public var invMsPerPhysics:Float;
+    private var accumulator:Float;
+    
+    public var stepCount:Int;
+    public var updateCount:Int;
+
+    public function new(pps:Int,broadphase:IBroadphase) {
+        this.pps = pps;
+        this.broadphase = broadphase;
 
         dynamicBodies = new Array<Body>();
         sleepingBodies = new Array<Body>();
         
-        nf = new Intersect();
-        broadphase = new BruteforceBroadphase(map,nf);
-
-        contact = new Contact();
         globalForce = new Vector2(0,30); 
+        globalDamping = 0.99;
+
+        stepCount = 0;
+        updateCount = 0;
+        accumulator = 0;
+        msPerPhysics = 1000/pps;
+        invMsPerPhysics = msPerPhysics/1000;
     }
 
     public function update(delta:Float) {
-        var invDelta = delta/1000;
-        preUpdate(invDelta);
-        collide(invDelta);
-        updatePosition(invDelta);
+        stepCount++;
+        accumulator+=delta;
+        while (accumulator>msPerPhysics) {
+            updateCount++;
+            accumulator-=msPerPhysics;
+            preUpdate(invMsPerPhysics);
+            collide(invMsPerPhysics);
+            updatePosition(invMsPerPhysics);
+        }
     }
 
     public function preUpdate(delta:Float) {
         for (body in dynamicBodies) {
-            body.update(delta,globalForce,0.99);
+            body.update(delta,globalForce,globalDamping);
         }
     }
-
-    /*
-    With solid response:
-    - Dynamic vs Map
-    - Dynamic vs Static
-    - Dynamic vs Kinematic
-
-    Without solid response:
-    - Dynamic vs Dynamic
-    */
 
     public function collide(delta:Float) {
         broadphase.collide();

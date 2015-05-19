@@ -2,6 +2,7 @@ package ;
 
 import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Filter;
+import glaze.physics.collision.Intersect;
 import glaze.physics.collision.Map;
 import glaze.physics.collision.Contact;
 import glaze.physics.collision.Ray;
@@ -14,7 +15,6 @@ import glaze.physics.Body;
 import minicanvas.MiniCanvas;
 import util.GameLoop;
 import util.DigitalInput;
-import util.DigitalInput2;
 
 class Demo 
 {
@@ -25,7 +25,6 @@ class Demo
     public var loop:GameLoop;
     public var canvas:MiniCanvas;
     public var input:DigitalInput;
-    public var input2:DigitalInput2;
     public var engine:Engine;
 
     public var player:Body;
@@ -80,7 +79,7 @@ class Demo
         map.debug = debugGrid;
         debugGridItems = new Array<Int>();
 
-        engine = new Engine(map);
+        engine = new Engine(60,new glaze.physics.collision.broadphase.BruteforceBroadphase(map,new Intersect()));
 
         loop = new GameLoop();
         loop.updateFunc = update;
@@ -114,7 +113,6 @@ class Demo
         
         ray = new Ray();
 
-        var di2 = new util.DigitalInput2();
     }
 
     public function cb(a:BFProxy,b:BFProxy,c:Contact) {

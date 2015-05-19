@@ -1,12 +1,13 @@
 
-package glaze.physics.collision;
+package glaze.physics.collision.broadphase;
 
 import glaze.physics.collision.BFProxy;
+import glaze.physics.collision.broadphase.IBroadphase;
 import glaze.physics.collision.Intersect;
 import glaze.physics.collision.Map;
 import glaze.geom.Vector2;
 
-class BruteforceBroadphase 
+class BruteforceBroadphase implements IBroadphase
 {
 
     public var staticProxies:Array<BFProxy>;

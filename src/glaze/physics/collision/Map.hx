@@ -20,14 +20,8 @@ class Map
 
     public var data:Bytes2D;
 
-    public var startX:Int;
-    public var endX:Int;
-    public var startY:Int;
-    public var endY:Int;
-
     public var tilePosition:Vector2 = new Vector2();
     public var tileExtents:Vector2 = new Vector2();
-    public var delta:Vector2 = new Vector2();
     public var plane:Plane = new Plane();
 
     public var contact:Contact;
@@ -44,26 +38,21 @@ class Map
 
     public function testCollision(body:Body) {
 
-        startX = data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x - CORRECTION);
-        startY = data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y - CORRECTION);
+        var startX = data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x - CORRECTION);
+        var startY = data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y - CORRECTION);
 
-        endX = data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x + CORRECTION - ROUNDDOWN) + 1;
-        endY = data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y + CORRECTION ) + 1;
+        var endX = data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x + CORRECTION - ROUNDDOWN) + 1;
+        var endY = data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y + CORRECTION ) + 1;
 
         plane.setFromSegment(body.predictedPosition,body.position);
 
         for (x in startX...endX) {
             for (y in startY...endY) {
-                tilePosition.x = (x*tileSize)+tileHalfSize;
-                tilePosition.y = (y*tileSize)+tileHalfSize;
                 var cell = data.get(x,y,0);
-                // if (Math.abs(plane.distancePoint(tilePosition))>40)
-                //     continue;
-                // if (debug!=null)
-                //     debug(x,y);
                 if (cell>0) {
+                    tilePosition.x = (x*tileSize)+tileHalfSize;
+                    tilePosition.y = (y*tileSize)+tileHalfSize;
                     if (body.isBullet) {
-                        // trace(Math.abs(plane.distancePoint(tilePosition)));
                         if (Math.abs(plane.distancePoint(tilePosition))<40) {
                             if (Intersect.StaticAABBvsSweeptAABB(tilePosition,tileExtents,body.position,body.aabb.extents,body.delta,contact)==true) {
                                 body.respondBulletCollision(contact);
@@ -133,80 +122,7 @@ class Map
 
             return true;
         }
-
     }
-
-    /*
-    public function AABBvsStaticTileAABBSlope(aabb_position_A:Vector2,aabb_extents_A:Vector2,aabb_position_B:Vector2,aabb_extents_B:Vector2,contact:Contact):Bool {
-        var sign = new Vector2(1,-1);
-        var angle = 0;
-        var slope = new Vector2(1/1.4142135623730951,-1/1.4142135623730951);
-
-        var dx = aabb_position_B.x - aabb_position_A.x;
-        var px = (aabb_extents_B.x + aabb_extents_A.x) - Math.abs(dx);
-
-        var dy = aabb_position_B.y - aabb_position_A.y;
-        var py = (aabb_extents_B.y + aabb_extents_A.y) - Math.abs(dy);
-
-        if (px<py) {
-            contact.normal.x = dx<0 ? 1 : -1;
-            contact.normal.y = 0;
-        } else {
-            contact.normal.x = 0;
-            contact.normal.y = dy<0 ? 1 : -1;
-        }
-        // var o:Vector2D = obj.pos.minus(sign.times(obj.halfWidth));
-        var o = new Vector2();
-        o.x = aabb_position_A.x-sign.x*aabb_extents_A.x;
-        o.y = aabb_position_A.y-sign.y*aabb_extents_A.y;
-        // o.minusEquals(tilePos);
-        o.x -= aabb_position_B.x;
-        o.y -= aabb_position_B.y;
-        // var dp:Number = o.dot(slope);
-        var dp = o.dot(slope);
-        //trace(dp);
-        if(dp < 0){
-            trace(dp);
-        //     var temp_slope:Vector2D = slope.clone();
-        var tempSlope = slope.clone();
-        //     temp_slope.multEquals(-1*dp);
-        tempSlope.multEquals(-dp);
-        //     var lenN:Number = temp_slope.magnitude();
-        var lenN = Math.sqrt(tempSlope.x*tempSlope.x+tempSlope.y*tempSlope.y);
-        //     var lenP:Number = p.magnitude();
-        var lenP = Math.sqrt(px*px+py*py);
-        // trace(lenP,lenN);
-        if(lenP < lenN) {
-            var pcx = ((contact.normal.x * (aabb_extents_A.x+aabb_extents_B.x) ) + aabb_position_B.x);
-            var pcy = (contact.normal.y * (aabb_extents_A.y+aabb_extents_B.y) ) + aabb_position_B.y;
-
-            var pdx = aabb_position_A.x - pcx;
-            var pdy = aabb_position_A.y - pcy;
-
-            contact.distance = pdx*contact.normal.x + pdy*contact.normal.y;
-            return true;
-        } else {
-                trace("slope");
-                contact.normal.x = slope.x;
-                contact.normal.y = slope.y;
-                contact.distance = 0;
-
-        //         obj.ReportCollisionVsWorld( temp_slope, slope );
-        //         return COL_OTHER;
-        return true;
-            }
-        }
-
-        // return COL_NONE;
-        return false;
-    }
-*/
-    // var planeN:Vector2 = delta.m_MajorAxis.NegTo();
-    // var planeCentre:Vector2 = planeN.Mul( aabbHalfExtents ).AddTo(aabbCentre);
-
-    // // distance point from plane
-    // var planeDelta:Vector2 = point.Sub( planeCentre );
-    // var dist:Number = planeDelta.Dot( planeN );
 
     public function castRay(ray:Ray):Bool {
 
@@ -249,16 +165,13 @@ class Map
         var transitionEdgeNormalY = 0;
 
         while (true) {
+
             if (tMaxX < tMaxY) {
-                //transitionEdgeNormalX = (stepX < 0) ? 1 : -1;
-                //transitionEdgeNormalY = 0;
                 distX = tMaxX * d.x;
                 distY = tMaxX * d.y;
                 tMaxX += tDeltaX;
                 x += stepX;
             } else {
-                //transitionEdgeNormalX = 0;
-                //transitionEdgeNormalY = (stepY < 0) ? 1 : -1;
                 distX = tMaxY * d.x;
                 distY = tMaxY * d.y;
                 tMaxY += tDeltaY;
@@ -270,7 +183,6 @@ class Map
 
             var tile = data.get(x,y,0);
             if (tile>0) {
-                //trace(Math.sqrt(distX*distX+distY*distY));
                 if (tMaxX < tMaxY) {
                     transitionEdgeNormalX = (stepX < 0) ? 1 : -1;
                     transitionEdgeNormalY = 0;
