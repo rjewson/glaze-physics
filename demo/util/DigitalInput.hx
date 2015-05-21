@@ -56,12 +56,12 @@ class DigitalInput
         if (keyMap[event.keyCode] == 0) {           
             keyMap[event.keyCode] = frameRef;
         }
-        //event.preventDefault();
+        event.preventDefault();
     }
 
     public function KeyUp(event : KeyboardEvent) : Void {
         keyMap[event.keyCode] = 0;
-        //event.preventDefault();
+        event.preventDefault();
     }
 
     public function MouseDown(event : KeyboardEvent) : Void {

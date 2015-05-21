@@ -1,6 +1,6 @@
 {
-  "name": "glaze2",
-  "url": "https://github.com/rjewson/glaze2",
+  "name": "glaze-physics",
+  "url": "https://github.com/rjewson/glaze-physics",
   "license": "MIT",
   "classPath": "src",
   "tags": ["physics", "game", "platform"],

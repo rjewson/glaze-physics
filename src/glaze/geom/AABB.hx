@@ -2,7 +2,6 @@
 package glaze.geom;
 
 import glaze.geom.Vector2;
-import glaze.physics.collision.Contact;
 
 class AABB
 {
@@ -23,6 +22,9 @@ class AABB
     inline function get_r():Float { return this.position.x+this.extents.x;}
     inline function get_b():Float { return this.position.y+this.extents.y;}
 
+    /*
+     *  Standard AABB overlap.  Only returns a boolean, which isnt much use if you need to actually resolve anything.
+     */
     inline public function overlap(aabb:AABB):Bool {
         if (Math.abs(position.x-aabb.position.x)>(extents.x+aabb.extents.x)) return false;
         if (Math.abs(position.y-aabb.position.y)>(extents.y+aabb.extents.y)) return false;

@@ -486,23 +486,65 @@ glaze_geom_AABB.prototype = {
 	}
 	,__class__: glaze_geom_AABB
 };
-var glaze_geom_BFBB = function() {
+var glaze_geom_AABB2 = function(t,r,b,l) {
+	if(l == null) l = .0;
+	if(b == null) b = .0;
+	if(r == null) r = .0;
+	if(t == null) t = .0;
 	this.b = -Infinity;
 	this.r = -Infinity;
 	this.t = Infinity;
 	this.l = Infinity;
+	this.t = t;
+	this.r = r;
+	this.b = b;
+	this.l = l;
 };
-glaze_geom_BFBB.__name__ = true;
-glaze_geom_BFBB.prototype = {
+glaze_geom_AABB2.__name__ = true;
+glaze_geom_AABB2.prototype = {
 	setToSweeptAABB: function(aabb,preditcedPosition) {
 		this.l = aabb.position.x - aabb.extents.x;
 		this.r = aabb.position.x + aabb.extents.x;
 		this.t = aabb.position.y - aabb.extents.y;
 		this.b = aabb.position.y + aabb.extents.y;
 	}
-	,expandToAABB: function(aabb) {
+	,fromAABB: function(aabb) {
 	}
-	,__class__: glaze_geom_BFBB
+	,clone: function() {
+		return new glaze_geom_AABB2(this.t,this.r,this.b,this.l);
+	}
+	,reset: function() {
+		this.t = this.l = Infinity;
+		this.r = this.b = -Infinity;
+	}
+	,get_width: function() {
+		return this.r - this.l;
+	}
+	,get_height: function() {
+		return this.b - this.t;
+	}
+	,intersect: function(aabb) {
+		if(this.l > aabb.position.x + aabb.extents.x) return false; else if(this.r < aabb.position.x - aabb.extents.x) return false; else if(this.t > aabb.position.y + aabb.extents.y) return false; else if(this.b < aabb.position.y - aabb.extents.y) return false; else return true;
+	}
+	,addAABB: function(aabb) {
+		if(aabb.position.y - aabb.extents.y < this.t) this.t = aabb.position.y - aabb.extents.y;
+		if(aabb.position.x + aabb.extents.x > this.r) this.r = aabb.position.x + aabb.extents.x;
+		if(aabb.position.y + aabb.extents.y > this.b) this.b = aabb.position.y + aabb.extents.y;
+		if(aabb.position.x - aabb.extents.x < this.l) this.l = aabb.position.x - aabb.extents.x;
+	}
+	,addPoint: function(x,y) {
+		if(x < this.l) this.l = x;
+		if(x > this.r) this.r = x;
+		if(y < this.t) this.t = y;
+		if(y > this.b) this.b = y;
+	}
+	,expand: function(i) {
+		this.l += i;
+		this.r -= i;
+		this.t += i;
+		this.b -= i;
+	}
+	,__class__: glaze_geom_AABB2
 };
 var glaze_geom_Plane = function() {
 	this.d = 0;
@@ -6841,9 +6883,11 @@ util_DigitalInput.prototype = {
 	}
 	,KeyDown: function(event) {
 		if(this.keyMap[event.keyCode] == 0) this.keyMap[event.keyCode] = this.frameRef;
+		event.preventDefault();
 	}
 	,KeyUp: function(event) {
 		this.keyMap[event.keyCode] = 0;
+		event.preventDefault();
 	}
 	,MouseDown: function(event) {
 		this.keyMap[200] = this.frameRef;
@@ -6881,16 +6925,16 @@ var util_GameLoop = function() {
 util_GameLoop.__name__ = true;
 util_GameLoop.prototype = {
 	update: function(timestamp) {
-		this.delta = timestamp - this.prevAnimationTime;
+		if(this.prevAnimationTime == 0) this.delta = 16.6666666766666687; else this.delta = timestamp - this.prevAnimationTime;
 		this.prevAnimationTime = timestamp;
-		if(this.updateFunc != null) this.updateFunc(16.6666666666666679,Math.floor(timestamp));
+		if(this.updateFunc != null) this.updateFunc(Math.max(this.delta,16.6666666766666687),Math.floor(timestamp));
 		this.rafID = window.requestAnimationFrame($bind(this,this.update));
 		return false;
 	}
 	,start: function() {
 		if(this.isRunning == true) return;
 		this.isRunning = true;
-		this.prevAnimationTime = this.animationStartTimestamp = window.performance.now();
+		this.prevAnimationTime = 0;
 		this.rafID = window.requestAnimationFrame($bind(this,this.update));
 	}
 	,stop: function() {
@@ -7060,6 +7104,7 @@ util_CharacterController.WALK_FORCE = 20;
 util_CharacterController.AIR_CONTROL_FORCE = 10;
 util_CharacterController.JUMP_FORCE = 1000;
 util_CharacterController.MAX_AIR_HORIZONTAL_VELOCITY = 500;
+util_GameLoop.MIN_DELTA = 16.6666666766666687;
 Demo.main();
 })(typeof console != "undefined" ? console : {log:function(){}});
 
