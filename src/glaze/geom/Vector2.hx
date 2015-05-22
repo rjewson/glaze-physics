@@ -1,6 +1,8 @@
 
 package glaze.geom;
 
+typedef V2 = Vector2;
+
 class Vector2 
 {
 
@@ -35,7 +37,7 @@ class Vector2
         return t;
     }
 
-    public function length():Float {
+    inline public function length():Float {
         return Math.sqrt(x * x + y * y);
     }
 
@@ -46,36 +48,42 @@ class Vector2
         }
     }
 
-    public function clampVector(v:Vector2) {
+    inline public function clampVector(v:Vector2) {
         this.x = Math.min(Math.max(x,-v.x),v.x);
         this.y = Math.min(Math.max(y,-v.y),v.y);
     }
 
-    public function plusEquals(v:Vector2):Void {
+    inline public function plusEquals(v:Vector2):Void {
         this.x += v.x;
         this.y += v.y;
     }
 
-    public function minusEquals(v:Vector2):Void {
+    inline public function minusEquals(v:Vector2):Void {
         this.x -= v.x;
         this.y -= v.y;
     }
 
-    public function multEquals(s:Float):Void {
+    inline public function multEquals(s:Float):Void {
         this.x*=s;
         this.y*=s;
     }
 
-    public function plusMultEquals(v:Vector2,s:Float):Void {
+    inline public function plusMultEquals(v:Vector2,s:Float):Void {
         this.x += v.x*s;
         this.y += v.y*s;
     }
 
-    public function dot(v:Vector2):Float {
+    inline public function minusMultEquals(v:Vector2,s:Float):Void {
+        this.x -= v.x*s;
+        this.y -= v.y*s;
+    }
+
+
+    inline public function dot(v:Vector2):Float {
         return x * v.x + y * v.y;
     }
 
-    public function cross(v:Vector2):Float {
+    inline public function cross(v:Vector2):Float {
         return x * v.y - y * v.x;
     }
 

@@ -28,8 +28,7 @@ Demo.prototype = {
 		var extents2 = new glaze_geom_Vector2(10,10);
 		var delta2 = new glaze_geom_Vector2(-31,0);
 		var contact = new glaze_physics_collision_Contact();
-		var result;
-		result = glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(pos1,extents1,pos2,extents2,delta2,contact);
+		glaze_physics_collision_Intersect.StaticAABBvsSweeptAABB(pos1,extents1,pos2,extents2,delta2,contact);
 	}
 	,setup: function() {
 		this.canvas = minicanvas_MiniCanvas.create(640,640);
@@ -52,15 +51,32 @@ Demo.prototype = {
 		this.playerFilter = new glaze_physics_collision_Filter();
 		this.playerFilter.groupIndex = 1;
 		this.player = new glaze_physics_Body(20,45,this.mat1,this.playerFilter);
-		this.player.position.setTo(200,200);
+		var _this = this.player.position;
+		_this.x = 200;
+		_this.y = 200;
 		this.player.maxScalarVelocity = 0;
-		this.player.maxVelocity.setTo(160,1000);
+		var _this1 = this.player.maxVelocity;
+		_this1.x = 160;
+		_this1.y = 1000;
 		this.engine.addBody(this.player);
 		this.characterController = new util_CharacterController(this.input,this.player);
 		var box = new glaze_physics_Body(10,10,this.mat1);
-		box.position.setTo(150,200);
+		var _this2 = box.position;
+		_this2.x = 150;
+		_this2.y = 200;
 		this.engine.addBody(box);
-		var water = glaze_physics_collision_BFProxy.CreateStaticFeature(464,544,144,64);
+		var tmp;
+		var bfproxy = new glaze_physics_collision_BFProxy();
+		bfproxy.aabb = new glaze_geom_AABB();
+		var _this3 = bfproxy.aabb.position;
+		_this3.x = 464;
+		_this3.y = 544;
+		var _this4 = bfproxy.aabb.extents;
+		_this4.x = 144;
+		_this4.y = 64;
+		bfproxy.isStatic = true;
+		tmp = bfproxy;
+		var water = tmp;
 		water.contactCallback = $bind(this,this.cb);
 		water.isSensor = true;
 		this.engine.broadphase.addProxy(water);
@@ -82,8 +98,14 @@ Demo.prototype = {
 	}
 	,processInput: function() {
 		this.characterController.update();
-		var fire = this.input.JustPressed(32);
-		var search = this.input.JustPressed(71);
+		var tmp;
+		var _this = this.input;
+		tmp = _this.keyMap[32] == _this.frameRef - 1;
+		var fire = tmp;
+		var tmp1;
+		var _this1 = this.input;
+		tmp1 = _this1.keyMap[71] == _this1.frameRef - 1;
+		var search = tmp1;
 		var debug = this.input.keyMap[72] > 0;
 		var ray = this.input.keyMap[82] > 0;
 		if(fire) this.fireBullet();
@@ -96,14 +118,21 @@ Demo.prototype = {
 		var bullet = new glaze_physics_Body(5,5,this.mat1,this.playerFilter);
 		bullet.setMass(0.03);
 		bullet.setBounces(3);
-		bullet.position.setTo(this.player.position.x,this.player.position.y);
+		var _this = bullet.position;
+		_this.x = this.player.position.x;
+		_this.y = this.player.position.y;
 		bullet.isBullet = true;
 		bullet.debug = debugCount;
 		var vel = this.input.mousePosition.clone();
-		vel.minusEquals(this.player.position);
+		var v = this.player.position;
+		vel.x -= v.x;
+		vel.y -= v.y;
 		vel.normalize();
-		vel.multEquals(5000);
-		bullet.velocity.setTo(vel.x,vel.y);
+		vel.x *= 5000;
+		vel.y *= 5000;
+		var _this1 = bullet.velocity;
+		_this1.x = vel.x;
+		_this1.y = vel.y;
 		this.engine.addBody(bullet);
 	}
 	,shootRay: function() {
@@ -112,8 +141,13 @@ Demo.prototype = {
 	}
 	,searchArea: function() {
 		var area = new glaze_geom_AABB();
-		area.position.copy(this.player.position);
-		area.extents.setTo(100,100);
+		var _this = area.position;
+		var v = this.player.position;
+		_this.x = v.x;
+		_this.y = v.y;
+		var _this1 = area.extents;
+		_this1.x = 100;
+		_this1.y = 100;
 		var count = 0;
 		this.engine.broadphase.QueryArea(area,function(bf) {
 			count++;
@@ -121,7 +155,7 @@ Demo.prototype = {
 		haxe_Log.trace("Found:" + count,{ fileName : "Demo.hx", lineNumber : 186, className : "Demo", methodName : "searchArea"});
 	}
 	,rayTest: function(proxy) {
-		if(proxy.body != null && proxy.body == this.player) return -1; else return 0;
+		return proxy.body != null && proxy.body == this.player?-1:0;
 	}
 	,debugRender: function() {
 	}
@@ -134,7 +168,6 @@ Demo.prototype = {
 	,render: function() {
 		this.canvas.clear();
 		var cellSize = this.map.data.cellSize;
-		var halfCellSize = cellSize / 2;
 		var _g1 = 0;
 		var _g = this.map.data.height;
 		while(_g1 < _g) {
@@ -143,7 +176,10 @@ Demo.prototype = {
 			var _g2 = this.map.data.width;
 			while(_g3 < _g2) {
 				var x = _g3++;
-				var cell = this.map.data.get(x,y,0);
+				var tmp;
+				var _this = this.map.data;
+				tmp = _this.data.b[y * _this.internalWidth + x * _this.bytesPerCell];
+				var cell = tmp;
 				if(cell > 0) {
 					var xp = x * cellSize;
 					var yp = y * cellSize;
@@ -157,14 +193,38 @@ Demo.prototype = {
 			var body = _g11[_g4];
 			++_g4;
 			if(body.isBullet) this.canvas.line(body.position.x,body.position.y,body.previousPosition.x,body.previousPosition.y,3,-16711681);
-			this.canvas.rect(body.aabb.get_l(),body.aabb.get_t(),body.aabb.get_r(),body.aabb.get_b(),1,body.onGround?-16711681:65535);
+			var tmp1;
+			var _this1 = body.aabb;
+			tmp1 = _this1.position.x - _this1.extents.x;
+			var tmp2;
+			var _this2 = body.aabb;
+			tmp2 = _this2.position.y - _this2.extents.y;
+			var tmp3;
+			var _this3 = body.aabb;
+			tmp3 = _this3.position.x + _this3.extents.x;
+			var tmp4;
+			var _this4 = body.aabb;
+			tmp4 = _this4.position.y + _this4.extents.y;
+			this.canvas.rect(tmp1,tmp2,tmp3,tmp4,1,body.onGround?-16711681:65535);
 		}
 		var _g5 = 0;
 		var _g12 = this.engine.broadphase.staticProxies;
 		while(_g5 < _g12.length) {
 			var proxy = _g12[_g5];
 			++_g5;
-			this.canvas.rect(proxy.aabb.get_l(),proxy.aabb.get_t(),proxy.aabb.get_r(),proxy.aabb.get_b(),1,16711935);
+			var tmp5;
+			var _this5 = proxy.aabb;
+			tmp5 = _this5.position.x - _this5.extents.x;
+			var tmp6;
+			var _this6 = proxy.aabb;
+			tmp6 = _this6.position.y - _this6.extents.y;
+			var tmp7;
+			var _this7 = proxy.aabb;
+			tmp7 = _this7.position.x + _this7.extents.x;
+			var tmp8;
+			var _this8 = proxy.aabb;
+			tmp8 = _this8.position.y + _this8.extents.y;
+			this.canvas.rect(tmp5,tmp6,tmp7,tmp8,1,16711935);
 		}
 		var _g13 = 0;
 		var _g6 = this.debugGridItemsCount;
@@ -191,7 +251,9 @@ EReg.prototype = {
 		return this.r.m != null;
 	}
 	,matched: function(n) {
-		if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw new js__$Boot_HaxeError("EReg::matched");
+		var tmp;
+		if(this.r.m != null && n >= 0 && n < this.r.m.length) tmp = this.r.m[n]; else throw new js__$Boot_HaxeError("EReg::matched");
+		return tmp;
 	}
 	,matchedPos: function() {
 		if(this.r.m == null) throw new js__$Boot_HaxeError("No string matched");
@@ -199,20 +261,22 @@ EReg.prototype = {
 	}
 	,matchSub: function(s,pos,len) {
 		if(len == null) len = -1;
+		var tmp;
 		if(this.r.global) {
 			this.r.lastIndex = pos;
 			this.r.m = this.r.exec(len < 0?s:HxOverrides.substr(s,0,pos + len));
 			var b = this.r.m != null;
 			if(b) this.r.s = s;
-			return b;
+			tmp = b;
 		} else {
 			var b1 = this.match(len < 0?HxOverrides.substr(s,pos,null):HxOverrides.substr(s,pos,len));
 			if(b1) {
 				this.r.s = s;
 				this.r.m.index += pos;
 			}
-			return b1;
+			tmp = b1;
 		}
+		return tmp;
 	}
 	,split: function(s) {
 		var d = "#__delim__#";
@@ -223,22 +287,30 @@ EReg.prototype = {
 	}
 	,map: function(s,f) {
 		var offset = 0;
-		var buf = new StringBuf();
-		do {
+		var buf_b = "";
+		while(true) {
 			if(offset >= s.length) break; else if(!this.matchSub(s,offset)) {
-				buf.add(HxOverrides.substr(s,offset,null));
+				var x = HxOverrides.substr(s,offset,null);
+				buf_b += x == null?"null":"" + x;
 				break;
 			}
 			var p = this.matchedPos();
-			buf.add(HxOverrides.substr(s,offset,p.pos - offset));
-			buf.add(f(this));
+			var x1 = HxOverrides.substr(s,offset,p.pos - offset);
+			buf_b += x1 == null?"null":"" + x1;
+			var x2 = f(this);
+			buf_b += x2 == null?"null":"" + x2;
 			if(p.len == 0) {
-				buf.add(HxOverrides.substr(s,p.pos,1));
+				var x3 = HxOverrides.substr(s,p.pos,1);
+				buf_b += x3 == null?"null":"" + x3;
 				offset = p.pos + 1;
 			} else offset = p.pos + p.len;
-		} while(this.r.global);
-		if(!this.r.global && offset > 0 && offset < s.length) buf.add(HxOverrides.substr(s,offset,null));
-		return buf.b;
+			if(!this.r.global) break;
+		}
+		if(!this.r.global && offset > 0 && offset < s.length) {
+			var x4 = HxOverrides.substr(s,offset,null);
+			buf_b += x4 == null?"null":"" + x4;
+		}
+		return buf_b;
 	}
 	,__class__: EReg
 };
@@ -296,17 +368,14 @@ Std.parseInt = function(x) {
 	return v;
 };
 Std.random = function(x) {
-	if(x <= 0) return 0; else return Math.floor(Math.random() * x);
+	return x <= 0?0:Math.floor(Math.random() * x);
 };
 var StringBuf = function() {
 	this.b = "";
 };
 StringBuf.__name__ = true;
 StringBuf.prototype = {
-	add: function(x) {
-		this.b += Std.string(x);
-	}
-	,__class__: StringBuf
+	__class__: StringBuf
 };
 var StringTools = function() { };
 StringTools.__name__ = true;
@@ -342,16 +411,13 @@ StringTools.replace = function(s,sub,by) {
 };
 StringTools.hex = function(n,digits) {
 	var s = "";
-	var hexChars = "0123456789ABCDEF";
-	do {
-		s = hexChars.charAt(n & 15) + s;
+	while(true) {
+		s = "0123456789ABCDEF".charAt(n & 15) + s;
 		n >>>= 4;
-	} while(n > 0);
+		if(!(n > 0)) break;
+	}
 	if(digits != null) while(s.length < digits) s = "0" + s;
 	return s;
-};
-StringTools.fastCodeAt = function(s,index) {
-	return s.charCodeAt(index);
 };
 var glaze_Engine = function(pps,broadphase) {
 	this.pps = pps;
@@ -480,8 +546,14 @@ glaze_geom_AABB.prototype = {
 	}
 	,clone: function(aabb) {
 		var aabb1 = new glaze_geom_AABB();
-		aabb1.position.copy(this.position);
-		aabb1.extents.copy(this.extents);
+		var _this = aabb1.position;
+		var v = this.position;
+		_this.x = v.x;
+		_this.y = v.y;
+		var _this1 = aabb1.extents;
+		var v1 = this.extents;
+		_this1.x = v1.x;
+		_this1.y = v1.y;
 		return aabb1;
 	}
 	,__class__: glaze_geom_AABB
@@ -553,18 +625,33 @@ var glaze_geom_Plane = function() {
 glaze_geom_Plane.__name__ = true;
 glaze_geom_Plane.prototype = {
 	set: function(n,q) {
-		this.n.copy(n);
-		this.d = this.n.dot(q);
+		var _this = this.n;
+		_this.x = n.x;
+		_this.y = n.y;
+		var tmp;
+		var _this1 = this.n;
+		tmp = _this1.x * q.x + _this1.y * q.y;
+		this.d = tmp;
 	}
 	,setFromSegment: function(s,e) {
-		this.n.copy(s);
-		this.n.minusEquals(e);
+		var _this = this.n;
+		_this.x = s.x;
+		_this.y = s.y;
+		var _this1 = this.n;
+		_this1.x -= e.x;
+		_this1.y -= e.y;
 		this.n.normalize();
 		this.n.leftHandNormalEquals();
-		this.d = this.n.dot(s);
+		var tmp;
+		var _this2 = this.n;
+		tmp = _this2.x * s.x + _this2.y * s.y;
+		this.d = tmp;
 	}
 	,distancePoint: function(q) {
-		return this.n.dot(q) - this.d;
+		var tmp;
+		var _this = this.n;
+		tmp = _this.x * q.x + _this.y * q.y;
+		return tmp - this.d;
 	}
 	,__class__: glaze_geom_Plane
 };
@@ -597,8 +684,12 @@ glaze_geom_Vector2.prototype = {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 	,clampScalar: function(max) {
-		var l = this.length();
-		if(l > max) this.multEquals(max / l);
+		var l = Math.sqrt(this.x * this.x + this.y * this.y);
+		if(l > max) {
+			var s = max / l;
+			this.x *= s;
+			this.y *= s;
+		}
 	}
 	,clampVector: function(v) {
 		this.x = Math.min(Math.max(this.x,-v.x),v.x);
@@ -620,6 +711,10 @@ glaze_geom_Vector2.prototype = {
 		this.x += v.x * s;
 		this.y += v.y * s;
 	}
+	,minusMultEquals: function(v,s) {
+		this.x -= v.x * s;
+		this.y -= v.y * s;
+	}
 	,dot: function(v) {
 		return this.x * v.x + this.y * v.y;
 	}
@@ -638,7 +733,7 @@ glaze_geom_Vector2.prototype = {
 		return new glaze_geom_Vector2(-this.y,this.x);
 	}
 	,reflectEquals: function(normal) {
-		var d = this.dot(normal);
+		var d = this.x * normal.x + this.y * normal.y;
 		this.x -= 2 * d * normal.x;
 		this.y -= 2 * d * normal.y;
 	}
@@ -670,7 +765,9 @@ var glaze_physics_Body = function(w,h,material,filter) {
 	this.predictedPosition = new glaze_geom_Vector2();
 	this.positionCorrection = new glaze_geom_Vector2();
 	this.position = new glaze_geom_Vector2();
-	this.aabb.extents.setTo(w,h);
+	var _this = this.aabb.extents;
+	_this.x = w;
+	_this.y = h;
 	this.material = material;
 	this.filter = filter;
 	this.aabb.position = this.position;
@@ -684,19 +781,52 @@ glaze_physics_Body.__name__ = true;
 glaze_physics_Body.prototype = {
 	update: function(dt,globalForces,globalDamping) {
 		this.dt = dt;
-		this.forces.plusEquals(globalForces);
-		this.velocity.plusEquals(this.forces);
-		this.velocity.multEquals(globalDamping * this.damping);
+		var _this = this.forces;
+		_this.x += globalForces.x;
+		_this.y += globalForces.y;
+		var _this1 = this.velocity;
+		var v = this.forces;
+		_this1.x += v.x;
+		_this1.y += v.y;
+		var _this2 = this.velocity;
+		var s = globalDamping * this.damping;
+		_this2.x *= s;
+		_this2.y *= s;
 		if(!this.isBullet) {
-			if(this.maxScalarVelocity > 0) this.velocity.clampScalar(this.maxScalarVelocity); else this.velocity.clampVector(this.maxVelocity);
+			if(this.maxScalarVelocity > 0) this.velocity.clampScalar(this.maxScalarVelocity); else {
+				var _this3 = this.velocity;
+				var v1 = this.maxVelocity;
+				_this3.x = Math.min(Math.max(_this3.x,-v1.x),v1.x);
+				_this3.y = Math.min(Math.max(_this3.y,-v1.y),v1.y);
+			}
 		}
-		this.originalVelocity.copy(this.velocity);
-		this.predictedPosition.copy(this.position);
-		this.predictedPosition.plusMultEquals(this.velocity,dt);
-		this.previousPosition.copy(this.position);
-		this.delta.copy(this.predictedPosition);
-		this.delta.minusEquals(this.position);
-		this.forces.setTo(0,0);
+		var _this4 = this.originalVelocity;
+		var v2 = this.velocity;
+		_this4.x = v2.x;
+		_this4.y = v2.y;
+		var _this5 = this.predictedPosition;
+		var v3 = this.position;
+		_this5.x = v3.x;
+		_this5.y = v3.y;
+		var _this6 = this.predictedPosition;
+		var v4 = this.velocity;
+		_this6.x += v4.x * dt;
+		_this6.y += v4.y * dt;
+		var _this7 = this.previousPosition;
+		var v5 = this.position;
+		_this7.x = v5.x;
+		_this7.y = v5.y;
+		var _this8 = this.delta;
+		var v6 = this.predictedPosition;
+		_this8.x = v6.x;
+		_this8.y = v6.y;
+		var _this9 = this.delta;
+		var v7 = this.position;
+		_this9.x -= v7.x;
+		_this9.y -= v7.y;
+		var _this10 = this.forces;
+		_this10.x = 0;
+		_this10.y = 0;
 		this.damping = 1;
 		this.onGroundPrev = this.onGround;
 		this.onGround = false;
@@ -706,30 +836,48 @@ glaze_physics_Body.prototype = {
 	,respondStaticCollision: function(contact) {
 		var seperation = Math.max(contact.distance,0);
 		var penetration = Math.min(contact.distance,0);
-		this.positionCorrection.x -= contact.normal.x * (penetration / this.dt);
-		this.positionCorrection.y -= contact.normal.y * (penetration / this.dt);
-		var nv = this.velocity.dot(contact.normal) + seperation / this.dt;
+		var _this = this.positionCorrection;
+		var v = contact.normal;
+		var s = penetration / this.dt;
+		_this.x -= v.x * s;
+		_this.y -= v.y * s;
+		var tmp;
+		var _this1 = this.velocity;
+		var v1 = contact.normal;
+		tmp = _this1.x * v1.x + _this1.y * v1.y;
+		var nv = tmp + seperation / this.dt;
 		if(nv < 0) {
 			this.stepContactCount++;
-			this.velocity.x -= contact.normal.x * nv;
-			this.velocity.y -= contact.normal.y * nv;
+			var _this2 = this.velocity;
+			var v2 = contact.normal;
+			_this2.x -= v2.x * nv;
+			_this2.y -= v2.y * nv;
 			if(!(this.bounceCount != this.totalBounceCount) && contact.normal.y < 0) this.onGround = true;
-			this.lastNormal.copy(contact.normal);
+			var _this3 = this.lastNormal;
+			var v3 = contact.normal;
+			_this3.x = v3.x;
+			_this3.y = v3.y;
 			return true;
 		}
 		return false;
 	}
 	,t: function(msg) {
 		if(this.debug > 0) {
-			haxe_Log.trace(msg,{ fileName : "Body.hx", lineNumber : 141, className : "glaze.physics.Body", methodName : "t"});
+			haxe_Log.trace(msg,{ fileName : "Body.hx", lineNumber : 143, className : "glaze.physics.Body", methodName : "t"});
 			this.debug--;
 		}
 	}
 	,respondBulletCollision: function(contact) {
 		if(contact.time <= this.toi) {
 			this.toi = contact.time;
-			this.positionCorrection.copy(contact.sweepPosition);
-			this.lastNormal.copy(contact.normal);
+			var _this = this.positionCorrection;
+			var v = contact.sweepPosition;
+			_this.x = v.x;
+			_this.y = v.y;
+			var _this1 = this.lastNormal;
+			var v1 = contact.normal;
+			_this1.x = v1.x;
+			_this1.y = v1.y;
 			return true;
 		}
 		return false;
@@ -737,35 +885,74 @@ glaze_physics_Body.prototype = {
 	,updatePosition: function() {
 		if(this.isBullet) {
 			if(this.toi < Infinity) {
-				this.position.copy(this.positionCorrection);
+				var _this = this.position;
+				var v = this.positionCorrection;
+				_this.x = v.x;
+				_this.y = v.y;
 				this.originalVelocity.reflectEquals(this.lastNormal);
-				this.originalVelocity.multEquals(this.material.elasticity);
-				this.velocity.copy(this.originalVelocity);
-			} else this.position.copy(this.predictedPosition);
+				var _this1 = this.originalVelocity;
+				var s = this.material.elasticity;
+				_this1.x *= s;
+				_this1.y *= s;
+				var _this2 = this.velocity;
+				var v1 = this.originalVelocity;
+				_this2.x = v1.x;
+				_this2.y = v1.y;
+			} else {
+				var _this3 = this.position;
+				var v2 = this.predictedPosition;
+				_this3.x = v2.x;
+				_this3.y = v2.y;
+			}
 			return;
 		}
 		if(this.stepContactCount > 0 && !(this.bounceCount != this.totalBounceCount) && this.lastNormal.y < 0) {
 			var tangent = this.lastNormal.rightHandNormal();
-			var tv = this.originalVelocity.dot(tangent) * this.material.friction;
+			var tmp;
+			var _this4 = this.originalVelocity;
+			tmp = _this4.x * tangent.x + _this4.y * tangent.y;
+			var tv = tmp * this.material.friction;
 			this.velocity.x -= tangent.x * tv;
 			this.velocity.y -= tangent.y * tv;
 		}
-		this.positionCorrection.plusEquals(this.velocity);
-		this.positionCorrection.multEquals(this.dt);
-		this.position.plusEquals(this.positionCorrection);
-		this.positionCorrection.setTo(0,0);
+		var _this5 = this.positionCorrection;
+		var v3 = this.velocity;
+		_this5.x += v3.x;
+		_this5.y += v3.y;
+		var _this6 = this.positionCorrection;
+		var s1 = this.dt;
+		_this6.x *= s1;
+		_this6.y *= s1;
+		var _this7 = this.position;
+		var v4 = this.positionCorrection;
+		_this7.x += v4.x;
+		_this7.y += v4.y;
+		var _this8 = this.positionCorrection;
+		_this8.x = 0;
+		_this8.y = 0;
 		if(this.stepContactCount > 0 && this.bounceCount != this.totalBounceCount) {
 			this.originalVelocity.reflectEquals(this.lastNormal);
-			this.originalVelocity.multEquals(this.material.elasticity);
-			this.velocity.copy(this.originalVelocity);
+			var _this9 = this.originalVelocity;
+			var s2 = this.material.elasticity;
+			_this9.x *= s2;
+			_this9.y *= s2;
+			var _this10 = this.velocity;
+			var v5 = this.originalVelocity;
+			_this10.x = v5.x;
+			_this10.y = v5.y;
 			this.bounceCount++;
 		}
 	}
 	,addForce: function(f) {
-		this.forces.plusMultEquals(f,this.invMass);
+		var _this = this.forces;
+		var s = this.invMass;
+		_this.x += f.x * s;
+		_this.y += f.y * s;
 	}
 	,addMasslessForce: function(f) {
-		this.forces.plusEquals(f);
+		var _this = this.forces;
+		_this.x += f.x;
+		_this.y += f.y;
 	}
 	,setMass: function(mass) {
 		this.mass = mass;
@@ -801,8 +988,12 @@ glaze_physics_collision_BFProxy.__name__ = true;
 glaze_physics_collision_BFProxy.CreateStaticFeature = function(x,y,hw,hh) {
 	var bfproxy = new glaze_physics_collision_BFProxy();
 	bfproxy.aabb = new glaze_geom_AABB();
-	bfproxy.aabb.position.setTo(x,y);
-	bfproxy.aabb.extents.setTo(hw,hh);
+	var _this = bfproxy.aabb.position;
+	_this.x = x;
+	_this.y = y;
+	var _this1 = bfproxy.aabb.extents;
+	_this1.x = hw;
+	_this1.y = hh;
 	bfproxy.isStatic = true;
 	return bfproxy;
 };
@@ -861,8 +1052,7 @@ glaze_physics_collision_Intersect.StaticAABBvsStaticAABB = function(aabb_positio
 	var py = aabb_extents_B.y + aabb_extents_A.y - Math.abs(dy);
 	if(py <= 0) return false;
 	if(px < py) {
-		var sx;
-		if(dx < 0) sx = -1; else sx = 1;
+		var sx = dx < 0?-1:1;
 		contact.distance = contact.delta.x = px * sx;
 		contact.delta.y = 0;
 		contact.normal.x = sx;
@@ -870,8 +1060,7 @@ glaze_physics_collision_Intersect.StaticAABBvsStaticAABB = function(aabb_positio
 		contact.position.x = aabb_position_A.x + aabb_extents_A.x * sx;
 		contact.position.y = aabb_position_B.y;
 	} else {
-		var sy;
-		if(dy < 0) sy = -1; else sy = 1;
+		var sy = dy < 0?-1:1;
 		contact.delta.x = 0;
 		contact.distance = contact.delta.y = py * sy;
 		contact.normal.x = 0;
@@ -884,10 +1073,8 @@ glaze_physics_collision_Intersect.StaticAABBvsStaticAABB = function(aabb_positio
 glaze_physics_collision_Intersect.StaticSegmentvsStaticAABB = function(aabb_position,aabb_extents,segment_position,segment_delta,paddingX,paddingY,contact) {
 	var scaleX = 1 / segment_delta.x;
 	var scaleY = 1 / segment_delta.y;
-	var signX;
-	if(scaleX < 0) signX = -1; else signX = 1;
-	var signY;
-	if(scaleY < 0) signY = -1; else signY = 1;
+	var signX = scaleX < 0?-1:1;
+	var signY = scaleY < 0?-1:1;
 	var nearTimeX = (aabb_position.x - signX * (aabb_extents.x + paddingX) - segment_position.x) * scaleX;
 	var nearTimeY = (aabb_position.y - signY * (aabb_extents.y + paddingY) - segment_position.y) * scaleY;
 	var farTimeX = (aabb_position.x + signX * (aabb_extents.x + paddingX) - segment_position.x) * scaleX;
@@ -941,11 +1128,11 @@ glaze_physics_collision_Intersect.AABBvsStaticSolidAABB = function(aabb_position
 	var dy = aabb_position_B.y - aabb_position_A.y;
 	var py = aabb_extents_B.y + aabb_extents_A.y - Math.abs(dy);
 	if(px < py) {
-		if(dx < 0) contact.normal.x = 1; else contact.normal.x = -1;
+		contact.normal.x = dx < 0?1:-1;
 		contact.normal.y = 0;
 	} else {
 		contact.normal.x = 0;
-		if(dy < 0) contact.normal.y = 1; else contact.normal.y = -1;
+		contact.normal.y = dy < 0?1:-1;
 	}
 	var pcx = contact.normal.x * (aabb_extents_A.x + aabb_extents_B.x) + aabb_position_B.x;
 	var pcy = contact.normal.y * (aabb_extents_A.y + aabb_extents_B.y) + aabb_position_B.y;
@@ -1021,16 +1208,30 @@ var glaze_physics_collision_Map = function(data) {
 	this.data = data;
 	this.tileSize = data.cellSize;
 	this.tileHalfSize = this.tileSize / 2;
-	this.tileExtents.setTo(this.tileHalfSize,this.tileHalfSize);
+	var _this = this.tileExtents;
+	_this.x = this.tileHalfSize;
+	_this.y = this.tileHalfSize;
 	this.contact = new glaze_physics_collision_Contact();
 };
 glaze_physics_collision_Map.__name__ = true;
 glaze_physics_collision_Map.prototype = {
 	testCollision: function(body) {
-		var startX = this.data.Index(Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x);
-		var startY = this.data.Index(Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y);
-		var endX = this.data.Index(Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x - .01) + 1;
-		var endY = this.data.Index(Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y) + 1;
+		var tmp;
+		var value = Math.min(body.position.x,body.predictedPosition.x) - body.aabb.extents.x;
+		tmp = value * this.data.invCellSize | 0;
+		var startX = tmp;
+		var tmp1;
+		var value1 = Math.min(body.position.y,body.predictedPosition.y) - body.aabb.extents.y;
+		tmp1 = value1 * this.data.invCellSize | 0;
+		var startY = tmp1;
+		var tmp2;
+		var value2 = Math.max(body.position.x,body.predictedPosition.x) + body.aabb.extents.x - .01;
+		tmp2 = value2 * this.data.invCellSize | 0;
+		var endX = tmp2 + 1;
+		var tmp3;
+		var value3 = Math.max(body.position.y,body.predictedPosition.y) + body.aabb.extents.y;
+		tmp3 = value3 * this.data.invCellSize | 0;
+		var endY = tmp3 + 1;
 		this.plane.setFromSegment(body.predictedPosition,body.position);
 		var _g = startX;
 		while(_g < endX) {
@@ -1038,7 +1239,10 @@ glaze_physics_collision_Map.prototype = {
 			var _g1 = startY;
 			while(_g1 < endY) {
 				var y = _g1++;
-				var cell = this.data.get(x,y,0);
+				var tmp4;
+				var _this = this.data;
+				tmp4 = _this.data.b[y * _this.internalWidth + x * _this.bytesPerCell];
+				var cell = tmp4;
 				if(cell > 0) {
 					this.tilePosition.x = x * this.tileSize + this.tileHalfSize;
 					this.tilePosition.y = y * this.tileSize + this.tileHalfSize;
@@ -1049,7 +1253,10 @@ glaze_physics_collision_Map.prototype = {
 					} else if(glaze_physics_collision_Intersect.AABBvsStaticSolidAABB(body.position,body.aabb.extents,this.tilePosition,this.tileExtents,this.contact) == true) {
 						var nextX = x + (this.contact.normal.x | 0);
 						var nextY = y + (this.contact.normal.y | 0);
-						var nextCell = this.data.get(nextX,nextY,0);
+						var tmp5;
+						var _this1 = this.data;
+						tmp5 = _this1.data.b[nextY * _this1.internalWidth + nextX * _this1.bytesPerCell];
+						var nextCell = tmp5;
 						if(nextCell == 0) {
 							body.respondStaticCollision(this.contact);
 							if(this.debug != null) this.debug(x,y);
@@ -1061,26 +1268,36 @@ glaze_physics_collision_Map.prototype = {
 		}
 	}
 	,AABBvsStaticTileAABBSlope: function(aabb_position_A,aabb_extents_A,aabb_position_B,aabb_extents_B,contact) {
-		var slope = new glaze_geom_Vector2(0.707106781186547462,-0.707106781186547462);
+		new glaze_geom_Vector2(0.707106781186547462,-0.707106781186547462);
 		var dx = aabb_position_B.x - aabb_position_A.x;
 		var px = aabb_extents_B.x + aabb_extents_A.x - Math.abs(dx);
 		var dy = aabb_position_B.y - aabb_position_A.y;
 		var py = aabb_extents_B.y + aabb_extents_A.y - Math.abs(dy);
 		if(px < py) {
-			if(dx < 0) contact.normal.x = 1; else contact.normal.x = -1;
+			contact.normal.x = dx < 0?1:-1;
 			contact.normal.y = 0;
 		} else {
 			contact.normal.x = 0;
-			if(dy < 0) contact.normal.y = 1; else contact.normal.y = -1;
+			contact.normal.y = dy < 0?1:-1;
 		}
 		if(px >= 0 && py >= 0) {
 			haxe_Log.trace("a",{ fileName : "Map.hx", lineNumber : 103, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
 			contact.normal.x = 0.707106781186547462;
 			contact.normal.y = -0.707106781186547462;
 			var cornerTile = new glaze_geom_Vector2(aabb_position_B.x - aabb_extents_B.x,aabb_position_B.y - aabb_extents_B.y);
-			var d = contact.normal.dot(cornerTile);
+			var tmp;
+			var _this = contact.normal;
+			tmp = _this.x * cornerTile.x + _this.y * cornerTile.y;
+			var d = tmp;
 			var cornerBody = new glaze_geom_Vector2(aabb_position_A.x - aabb_extents_A.x,aabb_position_A.y + aabb_extents_A.y);
-			contact.distance = (contact.normal.dot(cornerBody) - d) / contact.normal.dot(contact.normal);
+			var tmp1;
+			var _this1 = contact.normal;
+			tmp1 = _this1.x * cornerBody.x + _this1.y * cornerBody.y;
+			var tmp2;
+			var _this2 = contact.normal;
+			var v = contact.normal;
+			tmp2 = _this2.x * v.x + _this2.y * v.y;
+			contact.distance = (tmp1 - d) / tmp2;
 			return true;
 		} else {
 			haxe_Log.trace("b",{ fileName : "Map.hx", lineNumber : 114, className : "glaze.physics.collision.Map", methodName : "AABBvsStaticTileAABBSlope"});
@@ -1139,14 +1356,17 @@ glaze_physics_collision_Map.prototype = {
 				y += stepY;
 			}
 			if(distX * distX + distY * distY > ray.range * ray.range) return false;
-			var tile = this.data.get(x,y,0);
+			var tmp;
+			var _this = this.data;
+			tmp = _this.data.b[y * _this.internalWidth + x * _this.bytesPerCell];
+			var tile = tmp;
 			if(tile > 0) {
 				if(tMaxX < tMaxY) {
-					if(stepX < 0) transitionEdgeNormalX = 1; else transitionEdgeNormalX = -1;
+					transitionEdgeNormalX = stepX < 0?1:-1;
 					transitionEdgeNormalY = 0;
 				} else {
 					transitionEdgeNormalX = 0;
-					if(stepY < 0) transitionEdgeNormalY = 1; else transitionEdgeNormalY = -1;
+					transitionEdgeNormalY = stepY < 0?1:-1;
 				}
 				ray.report(distX,distY,transitionEdgeNormalX,transitionEdgeNormalY);
 				return true;
@@ -1168,16 +1388,37 @@ glaze_physics_collision_Ray.__name__ = true;
 glaze_physics_collision_Ray.prototype = {
 	initalize: function(origin,target,range,callback) {
 		this.reset();
-		this.origin.copy(origin);
-		this.target.copy(target);
-		this.delta.copy(target);
-		this.delta.minusEquals(origin);
-		this.direction.copy(this.delta);
+		var _this = this.origin;
+		_this.x = origin.x;
+		_this.y = origin.y;
+		var _this1 = this.target;
+		_this1.x = target.x;
+		_this1.y = target.y;
+		var _this2 = this.delta;
+		_this2.x = target.x;
+		_this2.y = target.y;
+		var _this3 = this.delta;
+		_this3.x -= origin.x;
+		_this3.y -= origin.y;
+		var _this4 = this.direction;
+		var v = this.delta;
+		_this4.x = v.x;
+		_this4.y = v.y;
 		this.direction.normalize();
-		if(range <= 0) this.range = this.delta.length(); else {
+		if(range <= 0) {
+			var tmp;
+			var _this5 = this.delta;
+			tmp = Math.sqrt(_this5.x * _this5.x + _this5.y * _this5.y);
+			this.range = tmp;
+		} else {
 			this.range = range;
-			this.delta.copy(this.direction);
-			this.delta.multEquals(range);
+			var _this6 = this.delta;
+			var v1 = this.direction;
+			_this6.x = v1.x;
+			_this6.y = v1.y;
+			var _this7 = this.delta;
+			_this7.x *= range;
+			_this7.y *= range;
 		}
 		this.callback = callback;
 	}
@@ -1194,8 +1435,12 @@ glaze_physics_collision_Ray.prototype = {
 		}
 		var distSqrd = distX * distX + distY * distY;
 		if(distSqrd < this.contact.distance * this.contact.distance) {
-			this.contact.position.setTo(this.origin.x + distX,this.origin.y + distY);
-			this.contact.normal.setTo(normalX,normalY);
+			var _this = this.contact.position;
+			_this.x = this.origin.x + distX;
+			_this.y = this.origin.y + distY;
+			var _this1 = this.contact.normal;
+			_this1.x = normalX;
+			_this1.y = normalY;
 			this.contact.distance = Math.sqrt(distSqrd);
 			this.hit = true;
 		}
@@ -1217,13 +1462,11 @@ glaze_physics_collision_broadphase_BruteforceBroadphase.__name__ = true;
 glaze_physics_collision_broadphase_BruteforceBroadphase.__interfaces__ = [glaze_physics_collision_broadphase_IBroadphase];
 glaze_physics_collision_broadphase_BruteforceBroadphase.prototype = {
 	addProxy: function(proxy) {
-		var target;
-		if(proxy.isStatic) target = this.staticProxies; else target = this.dynamicProxies;
+		var target = proxy.isStatic?this.staticProxies:this.dynamicProxies;
 		target.push(proxy);
 	}
 	,removeProxy: function(proxy) {
-		var target;
-		if(proxy.isStatic) target = this.staticProxies; else target = this.dynamicProxies;
+		var target = proxy.isStatic?this.staticProxies:this.dynamicProxies;
 		HxOverrides.remove(target,proxy);
 	}
 	,collide: function() {
@@ -1257,7 +1500,12 @@ glaze_physics_collision_broadphase_BruteforceBroadphase.prototype = {
 			while(_g < _g1.length) {
 				var proxy = _g1[_g];
 				++_g;
-				if(!proxy.isSensor && aabb.overlap(proxy.aabb)) result(proxy);
+				var tmp;
+				if(!proxy.isSensor) {
+					var aabb1 = proxy.aabb;
+					if(Math.abs(aabb.position.x - aabb1.position.x) > aabb.extents.x + aabb1.extents.x) tmp = false; else if(Math.abs(aabb.position.y - aabb1.position.y) > aabb.extents.y + aabb1.extents.y) tmp = false; else tmp = true;
+				} else tmp = false;
+				if(tmp) result(proxy);
 			}
 		}
 		if(checkStatic) {
@@ -1266,7 +1514,12 @@ glaze_physics_collision_broadphase_BruteforceBroadphase.prototype = {
 			while(_g2 < _g11.length) {
 				var proxy1 = _g11[_g2];
 				++_g2;
-				if(!proxy1.isSensor && aabb.overlap(proxy1.aabb)) result(proxy1);
+				var tmp1;
+				if(!proxy1.isSensor) {
+					var aabb2 = proxy1.aabb;
+					if(Math.abs(aabb.position.x - aabb2.position.x) > aabb.extents.x + aabb2.extents.x) tmp1 = false; else if(Math.abs(aabb.position.y - aabb2.position.y) > aabb.extents.y + aabb2.extents.y) tmp1 = false; else tmp1 = true;
+				} else tmp1 = false;
+				if(tmp1) result(proxy1);
 			}
 		}
 	}
@@ -1365,7 +1618,7 @@ haxe_CallStack.itemToString = function(b,s) {
 	case 1:
 		var m = s[2];
 		b.b += "module ";
-		if(m == null) b.b += "null"; else b.b += "" + m;
+		b.b += m == null?"null":"" + m;
 		break;
 	case 2:
 		var line = s[4];
@@ -1375,22 +1628,22 @@ haxe_CallStack.itemToString = function(b,s) {
 			haxe_CallStack.itemToString(b,s1);
 			b.b += " (";
 		}
-		if(file == null) b.b += "null"; else b.b += "" + file;
+		b.b += file == null?"null":"" + file;
 		b.b += " line ";
-		if(line == null) b.b += "null"; else b.b += "" + line;
+		b.b += line == null?"null":"" + line;
 		if(s1 != null) b.b += ")";
 		break;
 	case 3:
 		var meth = s[3];
 		var cname = s[2];
-		if(cname == null) b.b += "null"; else b.b += "" + cname;
+		b.b += cname == null?"null":"" + cname;
 		b.b += ".";
-		if(meth == null) b.b += "null"; else b.b += "" + meth;
+		b.b += meth == null?"null":"" + meth;
 		break;
 	case 4:
 		var n = s[2];
 		b.b += "local function #";
-		if(n == null) b.b += "null"; else b.b += "" + n;
+		b.b += n == null?"null":"" + n;
 		break;
 	}
 };
@@ -1483,8 +1736,16 @@ haxe_io_Bytes.ofString = function(s) {
 	var a = [];
 	var i = 0;
 	while(i < s.length) {
-		var c = StringTools.fastCodeAt(s,i++);
-		if(55296 <= c && c <= 56319) c = c - 55232 << 10 | StringTools.fastCodeAt(s,i++) & 1023;
+		var tmp;
+		var index = i++;
+		tmp = s.charCodeAt(index);
+		var c = tmp;
+		if(55296 <= c && c <= 56319) {
+			var tmp1;
+			var index1 = i++;
+			tmp1 = s.charCodeAt(index1);
+			c = c - 55232 << 10 | tmp1 & 1023;
+		}
 		if(c <= 127) a.push(c); else if(c <= 2047) {
 			a.push(192 | c >> 6);
 			a.push(128 | c & 63);
@@ -1502,13 +1763,7 @@ haxe_io_Bytes.ofString = function(s) {
 	return new haxe_io_Bytes(new Uint8Array(a).buffer);
 };
 haxe_io_Bytes.prototype = {
-	get: function(pos) {
-		return this.b[pos];
-	}
-	,set: function(pos,v) {
-		this.b[pos] = v & 255;
-	}
-	,blit: function(pos,src,srcpos,len) {
+	blit: function(pos,src,srcpos,len) {
 		if(pos < 0 || srcpos < 0 || len < 0 || pos + len > this.length || srcpos + len > src.length) throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
 		if(srcpos == 0 && len == src.length) this.b.set(src.b,pos); else this.b.set(src.b.subarray(srcpos,srcpos + len),pos);
 	}
@@ -1548,7 +1803,6 @@ haxe_crypto_BaseCode.prototype = {
 	}
 	,decodeBytes: function(b) {
 		var nbits = this.nbits;
-		var base = this.base;
 		if(this.tbl == null) this.initTable();
 		var tbl = this.tbl;
 		var size = b.length * nbits >> 3;
@@ -1561,12 +1815,16 @@ haxe_crypto_BaseCode.prototype = {
 			while(curbits < 8) {
 				curbits += nbits;
 				buf <<= nbits;
-				var i = tbl[b.get(pin++)];
+				var tmp;
+				var pos = pin++;
+				tmp = b.b[pos];
+				var i = tbl[tmp];
 				if(i == -1) throw new js__$Boot_HaxeError("BaseCode : invalid encoded char");
 				buf |= i;
 			}
 			curbits -= 8;
-			out.set(pout++,buf >> curbits & 255);
+			var pos1 = pout++;
+			out.b[pos1] = buf >> curbits & 255 & 255;
 		}
 		return out;
 	}
@@ -1604,7 +1862,7 @@ haxe_ds_StringMap.prototype = {
 		this.rh["$" + key] = value;
 	}
 	,getReserved: function(key) {
-		if(this.rh == null) return null; else return this.rh["$" + key];
+		return this.rh == null?null:this.rh["$" + key];
 	}
 	,existsReserved: function(key) {
 		if(this.rh == null) return false;
@@ -1629,18 +1887,7 @@ var haxe_io_BytesBuffer = function() {
 };
 haxe_io_BytesBuffer.__name__ = true;
 haxe_io_BytesBuffer.prototype = {
-	addBytes: function(src,pos,len) {
-		if(pos < 0 || len < 0 || pos + len > src.length) throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
-		var b1 = this.b;
-		var b2 = src.b;
-		var _g1 = pos;
-		var _g = pos + len;
-		while(_g1 < _g) {
-			var i = _g1++;
-			this.b.push(b2[i]);
-		}
-	}
-	,getBytes: function() {
+	getBytes: function() {
 		var bytes = new haxe_io_Bytes(new Uint8Array(this.b).buffer);
 		this.b = null;
 		return bytes;
@@ -1678,7 +1925,7 @@ haxe_io_Input.prototype = {
 	,readUInt16: function() {
 		var ch1 = this.readByte();
 		var ch2 = this.readByte();
-		if(this.bigEndian) return ch2 | ch1 << 8; else return ch1 | ch2 << 8;
+		return this.bigEndian?ch2 | ch1 << 8:ch1 | ch2 << 8;
 	}
 	,__class__: haxe_io_Input
 };
@@ -1744,8 +1991,7 @@ haxe_io_FPHelper.i32ToFloat = function(i) {
 };
 haxe_io_FPHelper.floatToI32 = function(f) {
 	if(f == 0) return 0;
-	var af;
-	if(f < 0) af = -f; else af = f;
+	var af = f < 0?-f:f;
 	var exp = Math.floor(Math.log(af) / 0.6931471805599453);
 	if(exp < -127) exp = -127; else if(exp > 128) exp = 128;
 	var sig = Math.round((af / Math.pow(2,exp) - 1) * 8388608) & 8388607;
@@ -1764,12 +2010,12 @@ haxe_io_FPHelper.doubleToI64 = function(v) {
 		i64.low = 0;
 		i64.high = 0;
 	} else {
-		var av;
-		if(v < 0) av = -v; else av = v;
+		var av = v < 0?-v:v;
 		var exp = Math.floor(Math.log(av) / 0.6931471805599453);
-		var sig;
+		var tmp;
 		var v1 = (av / Math.pow(2,exp) - 1) * 4503599627370496.;
-		sig = Math.round(v1);
+		tmp = Math.round(v1);
+		var sig = tmp;
 		var sig_l = sig | 0;
 		var sig_h = sig / 4294967296.0 | 0;
 		i64.low = sig_l;
@@ -1786,36 +2032,41 @@ var haxe_zip_HuffTools = function() {
 haxe_zip_HuffTools.__name__ = true;
 haxe_zip_HuffTools.prototype = {
 	treeDepth: function(t) {
+		var tmp;
 		switch(t[1]) {
 		case 0:
-			return 0;
+			tmp = 0;
+			break;
 		case 2:
 			throw new js__$Boot_HaxeError("assert");
 			break;
 		case 1:
-			var b = t[3];
-			var a = t[2];
-			var da = this.treeDepth(a);
-			var db = this.treeDepth(b);
-			return 1 + (da < db?da:db);
+			var da = this.treeDepth(t[2]);
+			var db = this.treeDepth(t[3]);
+			tmp = 1 + (da < db?da:db);
+			break;
 		}
+		return tmp;
 	}
 	,treeCompress: function(t) {
 		var d = this.treeDepth(t);
 		if(d == 0) return t;
-		if(d == 1) switch(t[1]) {
-		case 1:
-			var b = t[3];
-			var a = t[2];
-			return haxe_zip_Huffman.NeedBit(this.treeCompress(a),this.treeCompress(b));
-		default:
-			throw new js__$Boot_HaxeError("assert");
+		if(d == 1) {
+			var tmp;
+			switch(t[1]) {
+			case 1:
+				tmp = haxe_zip_Huffman.NeedBit(this.treeCompress(t[2]),this.treeCompress(t[3]));
+				break;
+			default:
+				throw new js__$Boot_HaxeError("assert");
+			}
+			return tmp;
 		}
 		var size = 1 << d;
 		var table = [];
 		var _g = 0;
 		while(_g < size) {
-			var i = _g++;
+			_g++;
 			table.push(haxe_zip_Huffman.Found(-1));
 		}
 		this.treeWalk(table,0,0,d,t);
@@ -1824,11 +2075,9 @@ haxe_zip_HuffTools.prototype = {
 	,treeWalk: function(table,p,cd,d,t) {
 		switch(t[1]) {
 		case 1:
-			var b = t[3];
-			var a = t[2];
 			if(d > 0) {
-				this.treeWalk(table,p,cd + 1,d - 1,a);
-				this.treeWalk(table,p | 1 << cd,cd + 1,d - 1,b);
+				this.treeWalk(table,p,cd + 1,d - 1,t[2]);
+				this.treeWalk(table,p | 1 << cd,cd + 1,d - 1,t[3]);
 			} else table[p] = this.treeCompress(t);
 			break;
 		default:
@@ -1849,14 +2098,14 @@ haxe_zip_HuffTools.prototype = {
 		if(maxbits > 32) throw new js__$Boot_HaxeError("Invalid huffman");
 		var _g = 0;
 		while(_g < maxbits) {
-			var i = _g++;
+			_g++;
 			counts.push(0);
 			tmp.push(0);
 		}
 		var _g1 = 0;
 		while(_g1 < nlengths) {
-			var i1 = _g1++;
-			var p = lengths[i1 + pos];
+			var i = _g1++;
+			var p = lengths[i + pos];
 			if(p >= maxbits) throw new js__$Boot_HaxeError("Invalid huffman");
 			counts[p]++;
 		}
@@ -1864,19 +2113,19 @@ haxe_zip_HuffTools.prototype = {
 		var _g11 = 1;
 		var _g2 = maxbits - 1;
 		while(_g11 < _g2) {
-			var i2 = _g11++;
-			code = code + counts[i2] << 1;
-			tmp[i2] = code;
+			var i1 = _g11++;
+			code = code + counts[i1] << 1;
+			tmp[i1] = code;
 		}
 		var bits = new haxe_ds_IntMap();
 		var _g3 = 0;
 		while(_g3 < nlengths) {
-			var i3 = _g3++;
-			var l = lengths[i3 + pos];
+			var i2 = _g3++;
+			var l = lengths[i2 + pos];
 			if(l != 0) {
 				var n = tmp[l - 1];
 				tmp[l - 1] = n + 1;
-				bits.h[n << 5 | l] = i3;
+				bits.h[n << 5 | l] = i2;
 			}
 		}
 		return this.treeCompress(haxe_zip_Huffman.NeedBit(this.treeMake(bits,maxbits,0,1),this.treeMake(bits,maxbits,1,1)));
@@ -1945,7 +2194,7 @@ var haxe_zip_InflateImpl = function(i,header,crc) {
 	this.huffdist = null;
 	this.len = 0;
 	this.dist = 0;
-	if(header) this.state = haxe_zip__$InflateImpl_State.Head; else this.state = haxe_zip__$InflateImpl_State.Block;
+	this.state = header?haxe_zip__$InflateImpl_State.Head:haxe_zip__$InflateImpl_State.Block;
 	this.input = i;
 	this.bits = 0;
 	this.nbits = 0;
@@ -1955,7 +2204,7 @@ var haxe_zip_InflateImpl = function(i,header,crc) {
 	this.lengths = [];
 	var _g = 0;
 	while(_g < 19) {
-		var i1 = _g++;
+		_g++;
 		this.lengths.push(-1);
 	}
 	this.window = new haxe_zip__$InflateImpl_Window(crc);
@@ -1968,7 +2217,13 @@ haxe_zip_InflateImpl.run = function(i,bufsize) {
 	var inflate = new haxe_zip_InflateImpl(i);
 	while(true) {
 		var len = inflate.readBytes(buf,0,bufsize);
-		output.addBytes(buf,0,len);
+		if(len < 0 || len > buf.length) throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
+		var b2 = buf.b;
+		var _g1 = 0;
+		while(_g1 < len) {
+			var i1 = _g1++;
+			output.b.push(b2[i1]);
+		}
 		if(len < bufsize) break;
 	}
 	return output.getBytes();
@@ -2014,7 +2269,7 @@ haxe_zip_InflateImpl.prototype = {
 		return b;
 	}
 	,getRevBits: function(n) {
-		if(n == 0) return 0; else if(this.getBit()) return 1 << n - 1 | this.getRevBits(n - 1); else return this.getRevBits(n - 1);
+		return n == 0?0:this.getBit()?1 << n - 1 | this.getRevBits(n - 1):this.getRevBits(n - 1);
 	}
 	,resetBits: function() {
 		this.bits = 0;
@@ -2036,7 +2291,7 @@ haxe_zip_InflateImpl.prototype = {
 		var c = this.window.getLastChar();
 		var _g = 0;
 		while(_g < n) {
-			var i = _g++;
+			_g++;
 			this.addByte(c);
 		}
 	}
@@ -2044,19 +2299,19 @@ haxe_zip_InflateImpl.prototype = {
 		this.addBytes(this.window.buffer,this.window.pos - d,len);
 	}
 	,applyHuffman: function(h) {
+		var tmp;
 		switch(h[1]) {
 		case 0:
-			var n = h[2];
-			return n;
+			tmp = h[2];
+			break;
 		case 1:
-			var b = h[3];
-			var a = h[2];
-			return this.applyHuffman(this.getBit()?b:a);
+			tmp = this.applyHuffman(this.getBit()?h[3]:h[2]);
+			break;
 		case 2:
-			var tbl = h[3];
-			var n1 = h[2];
-			return this.applyHuffman(tbl[this.getBits(n1)]);
+			tmp = this.applyHuffman(h[3][this.getBits(h[2])]);
+			break;
 		}
+		return tmp;
 	}
 	,inflateLengths: function(a,max) {
 		var i = 0;
@@ -2096,7 +2351,6 @@ haxe_zip_InflateImpl.prototype = {
 		case 0:
 			var cmf = this.input.readByte();
 			var cm = cmf & 15;
-			var cinfo = cmf >> 4;
 			if(cm != 8) throw new js__$Boot_HaxeError("Invalid data");
 			var flg = this.input.readByte();
 			var fdict = (flg & 32) != 0;
@@ -2152,7 +2406,7 @@ haxe_zip_InflateImpl.prototype = {
 				var _g3 = 0;
 				var _g22 = hlit + hdist;
 				while(_g3 < _g22) {
-					var i2 = _g3++;
+					_g3++;
 					lengths.push(0);
 				}
 				this.inflateLengths(lengths,hlit + hdist);
@@ -2165,26 +2419,22 @@ haxe_zip_InflateImpl.prototype = {
 			}
 			break;
 		case 3:
-			var rlen;
-			if(this.len < this.needed) rlen = this.len; else rlen = this.needed;
+			var rlen = this.len < this.needed?this.len:this.needed;
 			var bytes = this.input.read(rlen);
 			this.len -= rlen;
 			this.addBytes(bytes,0,rlen);
-			if(this.len == 0) if(this["final"]) this.state = haxe_zip__$InflateImpl_State.Crc; else this.state = haxe_zip__$InflateImpl_State.Block;
+			if(this.len == 0) this.state = this["final"]?haxe_zip__$InflateImpl_State.Crc:haxe_zip__$InflateImpl_State.Block;
 			return this.needed > 0;
 		case 6:
-			var rlen1;
-			if(this.len < this.needed) rlen1 = this.len; else rlen1 = this.needed;
+			var rlen1 = this.len < this.needed?this.len:this.needed;
 			this.addDistOne(rlen1);
 			this.len -= rlen1;
 			if(this.len == 0) this.state = haxe_zip__$InflateImpl_State.CData;
 			return this.needed > 0;
 		case 5:
 			while(this.len > 0 && this.needed > 0) {
-				var rdist;
-				if(this.len < this.dist) rdist = this.len; else rdist = this.dist;
-				var rlen2;
-				if(this.needed < rdist) rlen2 = this.needed; else rlen2 = rdist;
+				var rdist = this.len < this.dist?this.len:this.dist;
+				var rlen2 = this.needed < rdist?this.needed:rdist;
 				this.addDist(this.dist,rlen2);
 				this.len -= rlen2;
 			}
@@ -2196,20 +2446,19 @@ haxe_zip_InflateImpl.prototype = {
 				this.addByte(n);
 				return this.needed > 0;
 			} else if(n == 256) {
-				if(this["final"]) this.state = haxe_zip__$InflateImpl_State.Crc; else this.state = haxe_zip__$InflateImpl_State.Block;
+				this.state = this["final"]?haxe_zip__$InflateImpl_State.Crc:haxe_zip__$InflateImpl_State.Block;
 				return true;
 			} else {
 				n -= 257;
 				var extra_bits = haxe_zip_InflateImpl.LEN_EXTRA_BITS_TBL[n];
 				if(extra_bits == -1) throw new js__$Boot_HaxeError("Invalid data");
 				this.len = haxe_zip_InflateImpl.LEN_BASE_VAL_TBL[n] + this.getBits(extra_bits);
-				var dist_code;
-				if(this.huffdist == null) dist_code = this.getRevBits(5); else dist_code = this.applyHuffman(this.huffdist);
+				var dist_code = this.huffdist == null?this.getRevBits(5):this.applyHuffman(this.huffdist);
 				extra_bits = haxe_zip_InflateImpl.DIST_EXTRA_BITS_TBL[dist_code];
 				if(extra_bits == -1) throw new js__$Boot_HaxeError("Invalid data");
 				this.dist = haxe_zip_InflateImpl.DIST_BASE_VAL_TBL[dist_code] + this.getBits(extra_bits);
 				if(this.dist > this.window.available()) throw new js__$Boot_HaxeError("Invalid data");
-				if(this.dist == 1) this.state = haxe_zip__$InflateImpl_State.DistOne; else this.state = haxe_zip__$InflateImpl_State.Dist;
+				this.state = this.dist == 1?haxe_zip__$InflateImpl_State.DistOne:haxe_zip__$InflateImpl_State.Dist;
 				return true;
 			}
 			break;
@@ -2239,8 +2488,7 @@ js_Boot.__unhtml = function(s) {
 	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
 };
 js_Boot.__trace = function(v,i) {
-	var msg;
-	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
+	var msg = i != null?i.fileName + ":" + i.lineNumber + ": ":"";
 	msg += js_Boot.__string_rec(v,"");
 	if(i != null && i.customParams != null) {
 		var _g = 0;
@@ -2418,25 +2666,25 @@ js_html_compat_ArrayBuffer.prototype = {
 };
 var js_html_compat_DataView = function(buffer,byteOffset,byteLength) {
 	this.buf = buffer;
-	if(byteOffset == null) this.offset = 0; else this.offset = byteOffset;
-	if(byteLength == null) this.length = buffer.byteLength - this.offset; else this.length = byteLength;
+	this.offset = byteOffset == null?0:byteOffset;
+	this.length = byteLength == null?buffer.byteLength - this.offset:byteLength;
 	if(this.offset < 0 || this.length < 0 || this.offset + this.length > buffer.byteLength) throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
 };
 js_html_compat_DataView.__name__ = true;
 js_html_compat_DataView.prototype = {
 	getInt8: function(byteOffset) {
 		var v = this.buf.a[this.offset + byteOffset];
-		if(v >= 128) return v - 256; else return v;
+		return v >= 128?v - 256:v;
 	}
 	,getUint8: function(byteOffset) {
 		return this.buf.a[this.offset + byteOffset];
 	}
 	,getInt16: function(byteOffset,littleEndian) {
 		var v = this.getUint16(byteOffset,littleEndian);
-		if(v >= 32768) return v - 65536; else return v;
+		return v >= 32768?v - 65536:v;
 	}
 	,getUint16: function(byteOffset,littleEndian) {
-		if(littleEndian) return this.buf.a[this.offset + byteOffset] | this.buf.a[this.offset + byteOffset + 1] << 8; else return this.buf.a[this.offset + byteOffset] << 8 | this.buf.a[this.offset + byteOffset + 1];
+		return littleEndian?this.buf.a[this.offset + byteOffset] | this.buf.a[this.offset + byteOffset + 1] << 8:this.buf.a[this.offset + byteOffset] << 8 | this.buf.a[this.offset + byteOffset + 1];
 	}
 	,getInt32: function(byteOffset,littleEndian) {
 		var p = this.offset + byteOffset;
@@ -2444,11 +2692,11 @@ js_html_compat_DataView.prototype = {
 		var b = this.buf.a[p++];
 		var c = this.buf.a[p++];
 		var d = this.buf.a[p++];
-		if(littleEndian) return a | b << 8 | c << 16 | d << 24; else return d | c << 8 | b << 16 | a << 24;
+		return littleEndian?a | b << 8 | c << 16 | d << 24:d | c << 8 | b << 16 | a << 24;
 	}
 	,getUint32: function(byteOffset,littleEndian) {
 		var v = this.getInt32(byteOffset,littleEndian);
-		if(v < 0) return v + 4294967296.; else return v;
+		return v < 0?v + 4294967296.:v;
 	}
 	,getFloat32: function(byteOffset,littleEndian) {
 		return haxe_io_FPHelper.i32ToFloat(this.getInt32(byteOffset,littleEndian));
@@ -2459,7 +2707,7 @@ js_html_compat_DataView.prototype = {
 		return haxe_io_FPHelper.i64ToDouble(littleEndian?a:b,littleEndian?b:a);
 	}
 	,setInt8: function(byteOffset,value) {
-		if(value < 0) this.buf.a[byteOffset + this.offset] = value + 128 & 255; else this.buf.a[byteOffset + this.offset] = value & 255;
+		this.buf.a[byteOffset + this.offset] = value < 0?value + 128 & 255:value & 255;
 	}
 	,setUint8: function(byteOffset,value) {
 		this.buf.a[byteOffset + this.offset] = value & 255;
@@ -2583,7 +2831,7 @@ minicanvas_MiniCanvas.envIsNode = function() {
 	return typeof module !== 'undefined' && module.exports;
 };
 minicanvas_MiniCanvas.create = function(width,height,scaleMode) {
-	if(minicanvas_MiniCanvas.envIsNode()) return new minicanvas_NodeCanvas(width,height,scaleMode); else return new minicanvas_BrowserCanvas(width,height,scaleMode);
+	return minicanvas_MiniCanvas.envIsNode()?new minicanvas_NodeCanvas(width,height,scaleMode):new minicanvas_BrowserCanvas(width,height,scaleMode);
 };
 minicanvas_MiniCanvas.prototype = {
 	display: function(name) {
@@ -2616,17 +2864,15 @@ minicanvas_MiniCanvas.prototype = {
 		if(size == null) size = 8;
 		var cols = Math.ceil(this.width / size);
 		var rows = Math.ceil(this.height / size);
-		var slight;
-		if(null == light) slight = thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(255,255,255,1)"); else slight = light;
-		var sdark;
-		if(null == dark) sdark = thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(204,204,204,1)"); else sdark = dark;
+		var slight = null == light?thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(255,255,255,1)"):light;
+		var sdark = null == dark?thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(204,204,204,1)"):dark;
 		var _g = 0;
 		while(_g < cols) {
 			var c = _g++;
 			var _g1 = 0;
 			while(_g1 < rows) {
 				var r = _g1++;
-				if(c % 2 != r % 2) this.ctx.fillStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(slight); else this.ctx.fillStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(sdark);
+				this.ctx.fillStyle = c % 2 != r % 2?thx_color__$RGBA_RGBA_$Impl_$.toString(slight):thx_color__$RGBA_RGBA_$Impl_$.toString(sdark);
 				this.ctx.fillRect(c * size,r * size,size,size);
 			}
 		}
@@ -2659,16 +2905,12 @@ minicanvas_MiniCanvas.prototype = {
 	,dot: function(x,y,radius,color) {
 		if(radius == null) radius = 3.0;
 		this.ctx.beginPath();
-		this.ctx.fillStyle = thx_color__$RGBA_RGBA_$Impl_$.toString((function($this) {
-			var $r;
-			var t;
-			{
-				var _0 = color;
-				if(null == _0) t = null; else t = _0;
-			}
-			$r = t != null?t:thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(204,51,0,1)");
-			return $r;
-		}(this)));
+		var tmp;
+		var tmp1;
+		if(null == color) tmp1 = null; else tmp1 = color;
+		var t = tmp1;
+		if(t != null) tmp = t; else tmp = thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(204,51,0,1)");
+		this.ctx.fillStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(tmp);
 		this.ctx.arc(x,y,radius,0,Math.PI * 2,true);
 		this.ctx.fill();
 		return this;
@@ -2757,10 +2999,12 @@ minicanvas_MiniCanvas.prototype = {
 	,line: function(x0,y0,x1,y1,weight,color) {
 		if(weight == null) weight = 1.0;
 		this.ctx.lineWidth = weight;
-		var t;
-		var _0 = color;
-		if(null == _0) t = null; else t = _0;
-		if(t != null) this.ctx.strokeStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(t); else this.ctx.strokeStyle = thx_color__$RGBA_RGBA_$Impl_$.toString(thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,0,0,1)"));
+		var tmp;
+		var tmp1;
+		if(null == color) tmp1 = null; else tmp1 = color;
+		var t = tmp1;
+		if(t != null) tmp = thx_color__$RGBA_RGBA_$Impl_$.toString(t); else tmp = thx_color__$RGBA_RGBA_$Impl_$.toString(thx_color__$RGBA_RGBA_$Impl_$.fromString("rgba(0,0,0,1)"));
+		this.ctx.strokeStyle = tmp;
 		this.ctx.beginPath();
 		this.ctx.moveTo(x0,y0);
 		this.ctx.lineTo(x1,y1);
@@ -2815,25 +3059,17 @@ minicanvas_MiniCanvas.prototype = {
 	}
 	,animate: function(x,y) {
 		var _g = this;
-		var interaction = new minicanvas_CanvasInteraction(this,(function($this) {
-			var $r;
-			var t;
-			{
-				var _0 = x;
-				if(null == _0) t = null; else t = _0;
-			}
-			$r = t != null?t:$this.width / 2;
-			return $r;
-		}(this)),(function($this) {
-			var $r;
-			var t1;
-			{
-				var _01 = y;
-				if(null == _01) t1 = null; else t1 = _01;
-			}
-			$r = t1 != null?t1:$this.height;
-			return $r;
-		}(this)),function(stack) {
+		var tmp;
+		var tmp2;
+		if(null == x) tmp2 = null; else tmp2 = x;
+		var t = tmp2;
+		if(t != null) tmp = t; else tmp = this.width / 2;
+		var tmp1;
+		var tmp3;
+		if(null == y) tmp3 = null; else tmp3 = y;
+		var t1 = tmp3;
+		if(t1 != null) tmp1 = t1; else tmp1 = this.height;
+		var interaction = new minicanvas_CanvasInteraction(this,tmp,tmp1,function(stack) {
 			_g.resolveStack(stack,$bind(_g,_g.afterAnimate));
 			_g.storeFrame();
 		});
@@ -3016,20 +3252,28 @@ minicanvas_MiniCanvas.prototype = {
 			var rect = _g.canvas.getBoundingClientRect();
 			_g.trigger(name,e.clientX - rect.left,e.clientY - rect.top);
 		};
-		this.events.set(name,{ callback : callback, listener : listener});
+		var _this = this.events;
+		var value = { callback : callback, listener : listener};
+		if(__map_reserved[name] != null) _this.setReserved(name,value); else _this.h[name] = value;
 		if(this.isBrowser) this.canvas.addEventListener(type,listener,false);
 		return this;
 	}
 	,offMouseEvent: function(type,name) {
 		if(null == name) name = type;
-		var item = this.events.get(name);
+		var tmp;
+		var _this = this.events;
+		if(__map_reserved[name] != null) tmp = _this.getReserved(name); else tmp = _this.h[name];
+		var item = tmp;
 		if(null == item) return this;
 		this.events.remove(name);
 		if(this.isBrowser) this.canvas.removeEventListener(type,item.listener,false);
 		return this;
 	}
 	,trigger: function(name,x,y) {
-		var item = this.events.get(name);
+		var tmp;
+		var _this = this.events;
+		if(__map_reserved[name] != null) tmp = _this.getReserved(name); else tmp = _this.h[name];
+		var item = tmp;
 		if(null == item) return this;
 		item.callback({ mini : this, x : x, y : y});
 		return this;
@@ -3042,11 +3286,9 @@ minicanvas_MiniCanvas.prototype = {
 	}
 	,init: function() {
 		throw new js__$Boot_HaxeError("abstract method init()");
-		return;
 	}
 	,nativeDisplay: function(name) {
 		throw new js__$Boot_HaxeError("abstract method nativeDisplay()");
-		return;
 	}
 	,processScale: function() {
 		var _g = this.scaleMode;
@@ -3063,7 +3305,10 @@ minicanvas_MiniCanvas.prototype = {
 	,afterAnimate: function() {
 	}
 	,resolveStack: function(stack,done) {
-		if(stack.length == 0) return done();
+		if(stack.length == 0) {
+			done();
+			return;
+		}
 		(stack.shift())();
 		this.storeFrame();
 		this.resolveStack(stack,done);
@@ -3088,9 +3333,12 @@ minicanvas_BrowserCanvas.devicePixelRatio = function() {
 };
 minicanvas_BrowserCanvas.backingStoreRatio = function() {
 	if(minicanvas_BrowserCanvas._backingStoreRatio == 0) {
-		var canvas;
-		var _this = window.document;
-		canvas = _this.createElement("canvas");
+		var canvas = (function($this) {
+			var $r;
+			var _this = window.document;
+			$r = _this.createElement("canvas");
+			return $r;
+		}(this));
 		var context = canvas.getContext("2d",null);
 		minicanvas_BrowserCanvas._backingStoreRatio = (function(c) {
         return c.webkitBackingStorePixelRatio ||
@@ -3115,8 +3363,10 @@ minicanvas_BrowserCanvas.prototype = $extend(minicanvas_MiniCanvas.prototype,{
 		if(null != this._keyUp || null != this._keyDown) this.canvas.focus();
 	}
 	,init: function() {
+		var tmp;
 		var _this = window.document;
-		this.canvas = _this.createElement("canvas");
+		tmp = _this.createElement("canvas");
+		this.canvas = tmp;
 		{
 			var _g = this.scaleMode;
 			switch(_g[1]) {
@@ -3152,14 +3402,20 @@ minicanvas_BrowserCanvas.prototype = $extend(minicanvas_MiniCanvas.prototype,{
 		this.canvas.style.pointerEvents = "auto";
 	}
 	,resolveStack: function(stack,done) {
-		if(stack.length == 0) return done();
+		if(stack.length == 0) {
+			done();
+			return;
+		}
 		(stack.shift())();
 		this.storeFrame();
-		thx_Timer.delay((function(f,a1,a2) {
-			return function() {
-				f(a1,a2);
-			};
-		})($bind(this,this.resolveStack),stack,done),50);
+		var tmp;
+		var f = $bind(this,this.resolveStack);
+		var a1 = stack;
+		var a2 = done;
+		tmp = function() {
+			f(a1,a2);
+		};
+		thx_Timer.delay(tmp,50);
 	}
 	,__class__: minicanvas_BrowserCanvas
 });
@@ -3211,44 +3467,56 @@ minicanvas_CanvasInteraction.__super__ = minicanvas_Interaction;
 minicanvas_CanvasInteraction.prototype = $extend(minicanvas_Interaction.prototype,{
 	click: function(x,y) {
 		if(this.x != x || this.y != y) this.move(x,y);
-		this.stack.push((function(f,x1,y1) {
-			return function() {
-				return f(x1,y1);
-			};
-		})(($_=this.mini,$bind($_,$_.click)),x,y));
+		var tmp;
+		var f = ($_=this.mini,$bind($_,$_.click));
+		var x1 = x;
+		var y1 = y;
+		tmp = function() {
+			return f(x1,y1);
+		};
+		this.stack.push(tmp);
 		return this;
 	}
 	,down: function(x,y) {
 		if(this.x != x || this.y != y) this.move(x,y);
-		this.stack.push((function(f,x1,y1) {
-			return function() {
-				return f(x1,y1);
-			};
-		})(($_=this.mini,$bind($_,$_.down)),x,y));
+		var tmp;
+		var f = ($_=this.mini,$bind($_,$_.down));
+		var x1 = x;
+		var y1 = y;
+		tmp = function() {
+			return f(x1,y1);
+		};
+		this.stack.push(tmp);
 		return this;
 	}
 	,frame: function(callback) {
-		this.stack.push((function(f,a1) {
-			return function() {
-				f(a1);
-			};
-		})(callback,this.mini));
+		var tmp;
+		var f = callback;
+		var a1 = this.mini;
+		tmp = function() {
+			f(a1);
+		};
+		this.stack.push(tmp);
 		return this;
 	}
 	,keyDown: function(keyCode) {
-		this.stack.push((function(f,a1) {
-			return function() {
-				return f(a1);
-			};
-		})(($_=this.mini,$bind($_,$_.keyDown)),keyCode));
+		var tmp;
+		var f = ($_=this.mini,$bind($_,$_.keyDown));
+		var a1 = keyCode;
+		tmp = function() {
+			return f(a1);
+		};
+		this.stack.push(tmp);
 		return this;
 	}
 	,keyUp: function(keyCode) {
-		this.stack.push((function(f,a1) {
-			return function() {
-				return f(a1);
-			};
-		})(($_=this.mini,$bind($_,$_.keyUp)),keyCode));
+		var tmp;
+		var f = ($_=this.mini,$bind($_,$_.keyUp));
+		var a1 = keyCode;
+		tmp = function() {
+			return f(a1);
+		};
+		this.stack.push(tmp);
 		return this;
 	}
 	,move: function(x,y,delta) {
@@ -3264,11 +3532,16 @@ minicanvas_CanvasInteraction.prototype = $extend(minicanvas_Interaction.prototyp
 			step = i / steps;
 			dx = Math.round(thx_Floats.interpolate(step,this.x,x));
 			dy = Math.round(thx_Floats.interpolate(step,this.y,y));
-			this.stack.push((function(f,x1,y1) {
+			var tmp;
+			var f = [($_=this.mini,$bind($_,$_.move))];
+			var x1 = [dx];
+			var y1 = [dy];
+			tmp = (function(y1,x1,f) {
 				return function() {
-					return f(x1,y1);
+					return f[0](x1[0],y1[0]);
 				};
-			})(($_=this.mini,$bind($_,$_.move)),dx,dy));
+			})(y1,x1,f);
+			this.stack.push(tmp);
 		}
 		this.x = x;
 		this.y = y;
@@ -3276,17 +3549,20 @@ minicanvas_CanvasInteraction.prototype = $extend(minicanvas_Interaction.prototyp
 	}
 	,up: function(x,y) {
 		if(this.x != x || this.y != y) this.move(x,y);
-		this.stack.push((function(f,x1,y1) {
-			return function() {
-				return f(x1,y1);
-			};
-		})(($_=this.mini,$bind($_,$_.up)),x,y));
+		var tmp;
+		var f = ($_=this.mini,$bind($_,$_.up));
+		var x1 = x;
+		var y1 = y;
+		tmp = function() {
+			return f(x1,y1);
+		};
+		this.stack.push(tmp);
 		return this;
 	}
 	,sleep: function(frames) {
 		var _g = 0;
 		while(_g < frames) {
-			var i = _g++;
+			_g++;
 			this.stack.push(function() {
 			});
 		}
@@ -3324,7 +3600,7 @@ minicanvas_NodeCanvas.prototype = $extend(minicanvas_MiniCanvas.prototype,{
 		if(times <= 0) times = 1;
 		var _g = 0;
 		while(_g < times) {
-			var i = _g++;
+			_g++;
 			this.ensureEncoder().addFrame(this.ctx);
 		}
 		return this;
@@ -3574,7 +3850,10 @@ thx_Arrays.first = function(array) {
 	return array[0];
 };
 thx_Arrays.flatMap = function(array,callback) {
-	return thx_Arrays.flatten(array.map(callback));
+	var tmp;
+	var array1 = array.map(callback);
+	tmp = Array.prototype.concat.apply([],array1);
+	return tmp;
 };
 thx_Arrays.flatten = function(array) {
 	return Array.prototype.concat.apply([],array);
@@ -3597,7 +3876,7 @@ thx_Arrays.head = function(array) {
 	return array[0];
 };
 thx_Arrays.ifEmpty = function(value,alt) {
-	if(null != value && 0 != value.length) return value; else return alt;
+	return null != value && 0 != value.length?value:alt;
 };
 thx_Arrays.initial = function(array) {
 	return array.slice(0,array.length - 1);
@@ -3666,12 +3945,15 @@ thx_Arrays.rest = function(array) {
 	return array.slice(1);
 };
 thx_Arrays.sample = function(array,n) {
-	n = thx_Ints.min(n,array.length);
+	var tmp;
+	var b = array.length;
+	if(n < b) tmp = n; else tmp = b;
+	n = tmp;
 	var copy = array.slice();
 	var result = [];
 	var _g = 0;
 	while(_g < n) {
-		var i = _g++;
+		_g++;
 		result.push(copy.splice(Std.random(copy.length),1)[0]);
 	}
 	return result;
@@ -3714,7 +3996,11 @@ thx_Arrays.rotate = function(arr) {
 	return result;
 };
 thx_Arrays.zip = function(array1,array2) {
-	var length = thx_Ints.min(array1.length,array2.length);
+	var tmp;
+	var a = array1.length;
+	var b = array2.length;
+	if(a < b) tmp = a; else tmp = b;
+	var length = tmp;
 	var array = [];
 	var _g = 0;
 	while(_g < length) {
@@ -3812,13 +4098,13 @@ thx_ArrayFloats.compact = function(arr) {
 	});
 };
 thx_ArrayFloats.max = function(arr) {
-	if(arr.length == 0) return null; else return arr.reduce(function(max,v) {
-		if(v > max) return v; else return max;
+	return arr.length == 0?null:arr.reduce(function(max,v) {
+		return v > max?v:max;
 	},arr[0]);
 };
 thx_ArrayFloats.min = function(arr) {
-	if(arr.length == 0) return null; else return arr.reduce(function(min,v) {
-		if(v < min) return v; else return min;
+	return arr.length == 0?null:arr.reduce(function(min,v) {
+		return v < min?v:min;
 	},arr[0]);
 };
 thx_ArrayFloats.resize = function(array,length,fill) {
@@ -3838,13 +4124,13 @@ thx_ArrayInts.average = function(arr) {
 	return thx_ArrayInts.sum(arr) / arr.length;
 };
 thx_ArrayInts.max = function(arr) {
-	if(arr.length == 0) return null; else return arr.reduce(function(max,v) {
-		if(v > max) return v; else return max;
+	return arr.length == 0?null:arr.reduce(function(max,v) {
+		return v > max?v:max;
 	},arr[0]);
 };
 thx_ArrayInts.min = function(arr) {
-	if(arr.length == 0) return null; else return arr.reduce(function(min,v) {
-		if(v < min) return v; else return min;
+	return arr.length == 0?null:arr.reduce(function(min,v) {
+		return v < min?v:min;
 	},arr[0]);
 };
 thx_ArrayInts.resize = function(array,length,fill) {
@@ -3866,32 +4152,38 @@ thx_ArrayStrings.compact = function(arr) {
 	});
 };
 thx_ArrayStrings.max = function(arr) {
-	if(arr.length == 0) return null; else return arr.reduce(function(max,v) {
-		if(v > max) return v; else return max;
+	return arr.length == 0?null:arr.reduce(function(max,v) {
+		return v > max?v:max;
 	},arr[0]);
 };
 thx_ArrayStrings.min = function(arr) {
-	if(arr.length == 0) return null; else return arr.reduce(function(min,v) {
-		if(v < min) return v; else return min;
+	return arr.length == 0?null:arr.reduce(function(min,v) {
+		return v < min?v:min;
 	},arr[0]);
 };
 var thx_Error = function(message,stack,pos) {
 	Error.call(this,message);
 	this.message = message;
 	if(null == stack) {
+		var tmp;
 		try {
-			stack = haxe_CallStack.exceptionStack();
+			tmp = haxe_CallStack.exceptionStack();
 		} catch( e ) {
 			haxe_CallStack.lastException = e;
 			if (e instanceof js__$Boot_HaxeError) e = e.val;
-			stack = [];
+			tmp = [];
 		}
-		if(stack.length == 0) try {
-			stack = haxe_CallStack.callStack();
-		} catch( e1 ) {
-			haxe_CallStack.lastException = e1;
-			if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
-			stack = [];
+		stack = tmp;
+		if(stack.length == 0) {
+			var tmp1;
+			try {
+				tmp1 = haxe_CallStack.callStack();
+			} catch( e1 ) {
+				haxe_CallStack.lastException = e1;
+				if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
+				tmp1 = [];
+			}
+			stack = tmp1;
 		}
 	}
 	this.stackItems = stack;
@@ -3926,13 +4218,16 @@ thx_Floats.canParse = function(s) {
 	return thx_Floats.pattern_parse.match(s);
 };
 thx_Floats.clamp = function(v,min,max) {
-	if(v < min) return min; else if(v > max) return max; else return v;
+	return v < min?min:v > max?max:v;
 };
 thx_Floats.clampSym = function(v,max) {
-	return thx_Floats.clamp(v,-max,max);
+	var tmp;
+	var min = -max;
+	if(v < min) tmp = min; else if(v > max) tmp = max; else tmp = v;
+	return tmp;
 };
 thx_Floats.compare = function(a,b) {
-	if(a < b) return -1; else if(a > b) return 1; else return 0;
+	return a < b?-1:a > b?1:0;
 };
 thx_Floats.floorTo = function(f,decimals) {
 	var p = Math.pow(10,decimals);
@@ -3970,7 +4265,7 @@ thx_Floats.nearZero = function(n) {
 	return Math.abs(n) <= 10e-10;
 };
 thx_Floats.normalize = function(v) {
-	if(v < 0) return 0; else if(v > 1) return 1; else return v;
+	return v < 0?0:v > 1?1:v;
 };
 thx_Floats.parse = function(s) {
 	if(s.substring(0,1) == "+") s = s.substring(1);
@@ -3984,7 +4279,7 @@ thx_Floats.roundTo = function(f,decimals) {
 	return Math.round(f * p) / p;
 };
 thx_Floats.sign = function(value) {
-	if(value < 0) return -1; else return 1;
+	return value < 0?-1:1;
 };
 thx_Floats.wrap = function(v,min,max) {
 	var range = max - min + 1;
@@ -4145,16 +4440,19 @@ thx_Functions.noop = function() {
 var thx_Ints = function() { };
 thx_Ints.__name__ = true;
 thx_Ints.abs = function(v) {
-	if(v < 0) return -v; else return v;
+	return v < 0?-v:v;
 };
 thx_Ints.canParse = function(s) {
 	return thx_Ints.pattern_parse.match(s);
 };
 thx_Ints.clamp = function(v,min,max) {
-	if(v < min) return min; else if(v > max) return max; else return v;
+	return v < min?min:v > max?max:v;
 };
 thx_Ints.clampSym = function(v,max) {
-	return thx_Ints.clamp(v,-max,max);
+	var tmp;
+	var min = -max;
+	if(v < min) tmp = min; else if(v > max) tmp = max; else tmp = v;
+	return tmp;
 };
 thx_Ints.compare = function(a,b) {
 	return a - b;
@@ -4169,14 +4467,14 @@ thx_Ints.isOdd = function(v) {
 	return v % 2 != 0;
 };
 thx_Ints.max = function(a,b) {
-	if(a > b) return a; else return b;
+	return a > b?a:b;
 };
 thx_Ints.min = function(a,b) {
-	if(a < b) return a; else return b;
+	return a < b?a:b;
 };
 thx_Ints.parse = function(s,base) {
 	var v = parseInt(s,base);
-	if(isNaN(v)) return null; else return v;
+	return isNaN(v)?null:v;
 };
 thx_Ints.random = function(min,max) {
 	if(min == null) min = 0;
@@ -4202,7 +4500,7 @@ thx_Ints.toBool = function(v) {
 	return v != 0;
 };
 thx_Ints.sign = function(value) {
-	if(value < 0) return -1; else return 1;
+	return value < 0?-1:1;
 };
 thx_Ints.wrapCircular = function(v,max) {
 	v = v % max;
@@ -4227,20 +4525,24 @@ thx__$Set_Set_$Impl_$.arrayToSet = function(arr) {
 	return set;
 };
 thx__$Set_Set_$Impl_$.create = function(arr) {
-	if(null == arr) return []; else return thx__$Set_Set_$Impl_$.arrayToSet(arr);
+	return null == arr?[]:thx__$Set_Set_$Impl_$.arrayToSet(arr);
 };
 thx__$Set_Set_$Impl_$._new = function(arr) {
 	return arr;
 };
 thx__$Set_Set_$Impl_$.add = function(this1,v) {
-	if(thx__$Set_Set_$Impl_$.exists(this1,v)) return false; else {
+	var tmp;
+	if(thx__$Set_Set_$Impl_$.exists(this1,v)) tmp = false; else {
 		this1.push(v);
-		return true;
+		tmp = true;
 	}
+	return tmp;
 };
 thx__$Set_Set_$Impl_$.copy = function(this1) {
+	var tmp;
 	var arr = this1.slice();
-	return arr;
+	tmp = arr;
+	return tmp;
 };
 thx__$Set_Set_$Impl_$.difference = function(this1,set) {
 	var result = this1.slice();
@@ -4277,12 +4579,16 @@ thx__$Set_Set_$Impl_$.push = function(this1,v) {
 	thx__$Set_Set_$Impl_$.add(this1,v);
 };
 thx__$Set_Set_$Impl_$.slice = function(this1,pos,end) {
+	var tmp;
 	var arr = this1.slice(pos,end);
-	return arr;
+	tmp = arr;
+	return tmp;
 };
 thx__$Set_Set_$Impl_$.splice = function(this1,pos,len) {
+	var tmp;
 	var arr = this1.splice(pos,len);
-	return arr;
+	tmp = arr;
+	return tmp;
 };
 thx__$Set_Set_$Impl_$.union = function(this1,set) {
 	return thx__$Set_Set_$Impl_$.arrayToSet(this1.concat(thx__$Set_Set_$Impl_$.setToArray(set)));
@@ -4310,7 +4616,7 @@ thx_Strings.collapse = function(value) {
 	return thx_Strings.WSG.replace(StringTools.trim(value)," ");
 };
 thx_Strings.compare = function(a,b) {
-	if(a < b) return -1; else if(a > b) return 1; else return 0;
+	return a < b?-1:a > b?1:0;
 };
 thx_Strings.contains = function(s,test) {
 	return s.indexOf(test) >= 0;
@@ -4321,13 +4627,15 @@ thx_Strings.dasherize = function(s) {
 thx_Strings.ellipsis = function(s,maxlen,symbol) {
 	if(symbol == null) symbol = "...";
 	if(maxlen == null) maxlen = 20;
-	if(s.length > maxlen) return s.substring(0,symbol.length > maxlen - symbol.length?symbol.length:maxlen - symbol.length) + symbol; else return s;
+	return s.length > maxlen?s.substring(0,symbol.length > maxlen - symbol.length?symbol.length:maxlen - symbol.length) + symbol:s;
 };
 thx_Strings.filter = function(s,predicate) {
 	return s.split("").filter(predicate).join("");
 };
 thx_Strings.filterCharcode = function(s,predicate) {
-	return thx_Strings.toCharcodeArray(s).filter(predicate).map(function(i) {
+	return thx_Strings.map(s,function(s1) {
+		return HxOverrides.cca(s1,0);
+	}).filter(predicate).map(function(i) {
 		return String.fromCharCode(i);
 	}).join("");
 };
@@ -4348,7 +4656,7 @@ thx_Strings.isUpperCase = function(value) {
 	return value.toUpperCase() == value;
 };
 thx_Strings.ifEmpty = function(value,alt) {
-	if(null != value && "" != value) return value; else return alt;
+	return null != value && "" != value?value:alt;
 };
 thx_Strings.isDigitsOnly = function(value) {
 	return thx_Strings.DIGITS.match(value);
@@ -4358,12 +4666,16 @@ thx_Strings.isEmpty = function(value) {
 };
 thx_Strings.random = function(value,length) {
 	if(length == null) length = 1;
+	var tmp;
 	var pos = Math.floor((value.length - length + 1) * Math.random());
-	return HxOverrides.substr(value,pos,length);
+	tmp = HxOverrides.substr(value,pos,length);
+	return tmp;
 };
 thx_Strings.iterator = function(s) {
+	var tmp;
 	var _this = s.split("");
-	return HxOverrides.iter(_this);
+	tmp = HxOverrides.iter(_this);
+	return tmp;
 };
 thx_Strings.map = function(value,callback) {
 	return value.split("").map(callback);
@@ -4372,25 +4684,21 @@ thx_Strings.remove = function(value,toremove) {
 	return StringTools.replace(value,toremove,"");
 };
 thx_Strings.removeAfter = function(value,toremove) {
-	if(StringTools.endsWith(value,toremove)) return value.substring(0,value.length - toremove.length); else return value;
+	return StringTools.endsWith(value,toremove)?value.substring(0,value.length - toremove.length):value;
 };
 thx_Strings.removeBefore = function(value,toremove) {
-	if(StringTools.startsWith(value,toremove)) return value.substring(toremove.length); else return value;
+	return StringTools.startsWith(value,toremove)?value.substring(toremove.length):value;
 };
 thx_Strings.repeat = function(s,times) {
-	return ((function($this) {
-		var $r;
-		var _g = [];
-		{
-			var _g1 = 0;
-			while(_g1 < times) {
-				var i = _g1++;
-				_g.push(s);
-			}
-		}
-		$r = _g;
-		return $r;
-	}(this))).join("");
+	var tmp;
+	var _g = [];
+	var _g1 = 0;
+	while(_g1 < times) {
+		_g1++;
+		_g.push(s);
+	}
+	tmp = _g;
+	return tmp.join("");
 };
 thx_Strings.reverse = function(s) {
 	var arr = s.split("");
@@ -4428,7 +4736,10 @@ thx_Strings.trimCharsLeft = function(value,charlist) {
 	var _g = value.length;
 	while(_g1 < _g) {
 		var i = _g1++;
-		if(thx_Strings.contains(charlist,value.charAt(i))) pos++; else break;
+		var tmp;
+		var test = value.charAt(i);
+		tmp = charlist.indexOf(test) >= 0;
+		if(tmp) pos++; else break;
 	}
 	return value.substring(pos);
 };
@@ -4440,7 +4751,10 @@ thx_Strings.trimCharsRight = function(value,charlist) {
 	while(_g < len) {
 		var j = _g++;
 		i = len - j - 1;
-		if(thx_Strings.contains(charlist,value.charAt(i))) pos = i; else break;
+		var tmp;
+		var test = value.charAt(i);
+		tmp = charlist.indexOf(test) >= 0;
+		if(tmp) pos = i; else break;
 	}
 	return value.substring(0,pos);
 };
@@ -4526,18 +4840,24 @@ thx_Timer.throttle = function(callback,delayms,leading) {
 	};
 };
 thx_Timer.repeat = function(callback,delayms) {
-	return (function(f,id) {
-		return function() {
-			f(id);
+	return (function($this) {
+		var $r;
+		var id = setInterval(callback,delayms);
+		$r = function() {
+			thx_Timer.clear(id);
 		};
-	})(thx_Timer.clear,setInterval(callback,delayms));
+		return $r;
+	}(this));
 };
 thx_Timer.delay = function(callback,delayms) {
-	return (function(f,id) {
-		return function() {
-			f(id);
+	return (function($this) {
+		var $r;
+		var id = setTimeout(callback,delayms);
+		$r = function() {
+			thx_Timer.clear(id);
 		};
-	})(thx_Timer.clear,setTimeout(callback,delayms));
+		return $r;
+	}(this));
 };
 thx_Timer.frame = function(callback) {
 	var cancelled = false;
@@ -4563,15 +4883,17 @@ thx_Timer.nextFrame = function(callback) {
 	};
 };
 thx_Timer.immediate = function(callback) {
-	return (function(f,id) {
-		return function() {
-			f(id);
+	return (function($this) {
+		var $r;
+		var id = setImmediate(callback);
+		$r = function() {
+			thx_Timer.clear(id);
 		};
-	})(thx_Timer.clear,setImmediate(callback));
+		return $r;
+	}(this));
 };
 thx_Timer.clear = function(id) {
-	clearTimeout(id);
-	return;
+	return clearTimeout(id);
 };
 thx_Timer.time = function() {
 	return performance.now();
@@ -4731,8 +5053,10 @@ thx__$Tuple_Tuple6_$Impl_$.arrayToTuple6 = function(v) {
 var thx_color__$CIELCh_CIELCh_$Impl_$ = {};
 thx_color__$CIELCh_CIELCh_$Impl_$.__name__ = true;
 thx_color__$CIELCh_CIELCh_$Impl_$.create = function(lightness,chroma,hue) {
+	var tmp;
 	var channels = [lightness,chroma,thx_Floats.wrapCircular(hue,360)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.fromFloats = function(arr) {
 	thx_ArrayFloats.resize(arr,3);
@@ -4741,60 +5065,73 @@ thx_color__$CIELCh_CIELCh_$Impl_$.fromFloats = function(arr) {
 thx_color__$CIELCh_CIELCh_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "cielch":
-			return thx_color__$CIELCh_CIELCh_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3,false));
+			tmp = thx_color__$CIELCh_CIELCh_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3,false));
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.analogous = function(this1,spread) {
 	if(spread == null) spread = 30.0;
+	var tmp;
 	var _0 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.complement = function(this1) {
 	return thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,180);
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolateAngle(t,this1[2],other[2],360)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.rotate = function(this1,angle) {
 	return thx_color__$CIELCh_CIELCh_$Impl_$.withHue(this1,this1[2] + angle);
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.split = function(this1,spread) {
 	if(spread == null) spread = 144.0;
+	var tmp;
 	var _0 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.square = function(this1) {
 	return thx_color__$CIELCh_CIELCh_$Impl_$.tetrad(this1,90);
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.tetrad = function(this1,angle) {
+	var tmp;
 	var _0 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,0);
 	var _1 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,angle);
 	var _2 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,180);
 	var _3 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,180 + angle);
-	return { _0 : _0, _1 : _1, _2 : _2, _3 : _3};
+	tmp = { _0 : _0, _1 : _1, _2 : _2, _3 : _3};
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.triad = function(this1) {
+	var tmp;
 	var _0 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,-120);
 	var _1 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,0);
 	var _2 = thx_color__$CIELCh_CIELCh_$Impl_$.rotate(this1,120);
-	return { _0 : _0, _1 : _1, _2 : _2};
+	tmp = { _0 : _0, _1 : _1, _2 : _2};
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.withLightness = function(this1,newlightness) {
 	return [newlightness,this1[1],this1[2]];
@@ -4803,8 +5140,10 @@ thx_color__$CIELCh_CIELCh_$Impl_$.withChroma = function(this1,newchroma) {
 	return [this1[0],newchroma,this1[2]];
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.withHue = function(this1,newhue) {
+	var tmp;
 	var channels = [this1[0],this1[1],thx_Floats.wrapCircular(newhue,360)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CIELCh_CIELCh_$Impl_$.equals = function(this1,other) {
 	return Math.abs(this1[0] - other[0]) <= 10e-10 && Math.abs(this1[1] - other[1]) <= 10e-10 && Math.abs(this1[2] - other[2]) <= 10e-10;
@@ -4872,19 +5211,22 @@ thx_color__$CIELab_CIELab_$Impl_$.fromFloats = function(arr) {
 thx_color__$CIELab_CIELab_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "cielab":
-			return thx_color__$CIELab_CIELab_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3,false));
+			tmp = thx_color__$CIELab_CIELab_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3,false));
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$CIELab_CIELab_$Impl_$._new = function(channels) {
 	return channels;
@@ -4893,16 +5235,22 @@ thx_color__$CIELab_CIELab_$Impl_$.distance = function(this1,other) {
 	return (this1[0] - other[0]) * (this1[0] - other[0]) + (this1[1] - other[1]) * (this1[1] - other[1]) + (this1[2] - other[2]) * (this1[2] - other[2]);
 };
 thx_color__$CIELab_CIELab_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CIELab_CIELab_$Impl_$.darker = function(this1,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],0),this1[1],this1[2]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CIELab_CIELab_$Impl_$.lighter = function(this1,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],100),this1[1],this1[2]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CIELab_CIELab_$Impl_$.match = function(this1,palette) {
 	var it = palette;
@@ -4973,11 +5321,11 @@ thx_color__$CIELab_CIELab_$Impl_$.toXYZ = function(this1) {
 	var z = y - this1[2] / 200;
 	var p;
 	p = Math.pow(y,3);
-	if(p > 0.008856) y = p; else y = (y - 0.137931034482758619) / 7.787;
+	y = p > 0.008856?p:(y - 0.137931034482758619) / 7.787;
 	p = Math.pow(x,3);
-	if(p > 0.008856) x = p; else x = (x - 0.137931034482758619) / 7.787;
+	x = p > 0.008856?p:(x - 0.137931034482758619) / 7.787;
 	p = Math.pow(z,3);
-	if(p > 0.008856) z = p; else z = (z - 0.137931034482758619) / 7.787;
+	z = p > 0.008856?p:(z - 0.137931034482758619) / 7.787;
 	return [95.047 * x,100 * y,108.883 * z];
 };
 thx_color__$CIELab_CIELab_$Impl_$.toYxy = function(this1) {
@@ -5004,27 +5352,32 @@ thx_color__$CMY_CMY_$Impl_$.fromFloats = function(arr) {
 thx_color__$CMY_CMY_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "cmy":
 			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
-			return channels;
+			tmp = channels;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$CMY_CMY_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$CMY_CMY_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CMY_CMY_$Impl_$.withCyan = function(this1,newcyan) {
 	return [newcyan < 0?0:newcyan > 1?1:newcyan,this1[1],this1[2]];
@@ -5099,35 +5452,44 @@ thx_color__$CMYK_CMYK_$Impl_$.fromFloats = function(arr) {
 thx_color__$CMYK_CMYK_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "cmyk":
 			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,4);
-			return channels;
+			tmp = channels;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$CMYK_CMYK_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$CMYK_CMYK_$Impl_$.darker = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Floats.interpolate(t,this1[3],1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CMYK_CMYK_$Impl_$.lighter = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Floats.interpolate(t,this1[3],0)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CMYK_CMYK_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2]),thx_Floats.interpolate(t,this1[3],other[3])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$CMYK_CMYK_$Impl_$.withCyan = function(this1,newcyan) {
 	return [newcyan < 0?0:newcyan > 1?1:newcyan,this1[1],this1[2],this1[3]];
@@ -5203,38 +5565,47 @@ thx_color__$Grey_Grey_$Impl_$.create = function(v) {
 thx_color__$Grey_Grey_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "grey":case "gray":
 			var grey = thx_color_parse_ColorParser.getFloatChannels(info.channels,1)[0];
-			return grey;
+			tmp = grey;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$Grey_Grey_$Impl_$._new = function(grey) {
 	return grey;
 };
 thx_color__$Grey_Grey_$Impl_$.contrast = function(this1) {
-	if(this1 > 0.5) return thx_color__$Grey_Grey_$Impl_$.black; else return thx_color__$Grey_Grey_$Impl_$.white;
+	return this1 > 0.5?thx_color__$Grey_Grey_$Impl_$.black:thx_color__$Grey_Grey_$Impl_$.white;
 };
 thx_color__$Grey_Grey_$Impl_$.darker = function(this1,t) {
+	var tmp;
 	var grey = thx_Floats.interpolate(t,this1,0);
-	return grey;
+	tmp = grey;
+	return tmp;
 };
 thx_color__$Grey_Grey_$Impl_$.lighter = function(this1,t) {
+	var tmp;
 	var grey = thx_Floats.interpolate(t,this1,1);
-	return grey;
+	tmp = grey;
+	return tmp;
 };
 thx_color__$Grey_Grey_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var grey = thx_Floats.interpolate(t,this1,other);
-	return grey;
+	tmp = grey;
+	return tmp;
 };
 thx_color__$Grey_Grey_$Impl_$.toString = function(this1) {
 	return "grey(" + this1 * 100 + "%)";
@@ -5284,8 +5655,10 @@ thx_color__$Grey_Grey_$Impl_$.toYxy = function(this1) {
 var thx_color__$HSL_HSL_$Impl_$ = {};
 thx_color__$HSL_HSL_$Impl_$.__name__ = true;
 thx_color__$HSL_HSL_$Impl_$.create = function(hue,saturation,lightness) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.fromFloats = function(arr) {
 	thx_ArrayFloats.resize(arr,3);
@@ -5294,77 +5667,98 @@ thx_color__$HSL_HSL_$Impl_$.fromFloats = function(arr) {
 thx_color__$HSL_HSL_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "hsl":
 			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
-			return channels;
+			tmp = channels;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$HSL_HSL_$Impl_$.analogous = function(this1,spread) {
 	if(spread == null) spread = 30.0;
+	var tmp;
 	var _0 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.complement = function(this1) {
 	return thx_color__$HSL_HSL_$Impl_$.rotate(this1,180);
 };
 thx_color__$HSL_HSL_$Impl_$.darker = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],0)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.lighter = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolateAngle(t,this1[0],other[0],360),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.rotate = function(this1,angle) {
 	return thx_color__$HSL_HSL_$Impl_$.withHue(this1,this1[0] + angle);
 };
 thx_color__$HSL_HSL_$Impl_$.split = function(this1,spread) {
 	if(spread == null) spread = 144.0;
+	var tmp;
 	var _0 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.square = function(this1) {
 	return thx_color__$HSL_HSL_$Impl_$.tetrad(this1,90);
 };
 thx_color__$HSL_HSL_$Impl_$.tetrad = function(this1,angle) {
+	var tmp;
 	var _0 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,0);
 	var _1 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,angle);
 	var _2 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,180);
 	var _3 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,180 + angle);
-	return { _0 : _0, _1 : _1, _2 : _2, _3 : _3};
+	tmp = { _0 : _0, _1 : _1, _2 : _2, _3 : _3};
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.triad = function(this1) {
+	var tmp;
 	var _0 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,-120);
 	var _1 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,0);
 	var _2 = thx_color__$HSL_HSL_$Impl_$.rotate(this1,120);
-	return { _0 : _0, _1 : _1, _2 : _2};
+	tmp = { _0 : _0, _1 : _1, _2 : _2};
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.withAlpha = function(this1,alpha) {
+	var tmp;
 	var channels = this1.concat([alpha < 0?0:alpha > 1?1:alpha]);
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.withHue = function(this1,newhue) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(newhue,360),this1[1],this1[2]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.withLightness = function(this1,newlightness) {
 	return [this1[0],this1[1],newlightness < 0?0:newlightness > 1?1:newlightness];
@@ -5406,8 +5800,10 @@ thx_color__$HSL_HSL_$Impl_$.toRGBA = function(this1) {
 	return thx_color__$RGBXA_RGBXA_$Impl_$.toRGBA(thx_color__$HSL_HSL_$Impl_$.toRGBXA(this1));
 };
 thx_color__$HSL_HSL_$Impl_$.toRGBX = function(this1) {
+	var tmp;
 	var channels = [thx_color__$HSL_HSL_$Impl_$._c(this1[0] + 120,this1[1],this1[2]),thx_color__$HSL_HSL_$Impl_$._c(this1[0],this1[1],this1[2]),thx_color__$HSL_HSL_$Impl_$._c(this1[0] - 120,this1[1],this1[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSL_HSL_$Impl_$.toRGBXA = function(this1) {
 	return thx_color__$RGBX_RGBX_$Impl_$.toRGBXA(thx_color__$HSL_HSL_$Impl_$.toRGBX(this1));
@@ -5431,8 +5827,7 @@ thx_color__$HSL_HSL_$Impl_$.get_lightness = function(this1) {
 	return this1[2];
 };
 thx_color__$HSL_HSL_$Impl_$._c = function(d,s,l) {
-	var m2;
-	if(l <= 0.5) m2 = l * (1 + s); else m2 = l + s - l * s;
+	var m2 = l <= 0.5?l * (1 + s):l + s - l * s;
 	var m1 = 2 * l - m2;
 	d = thx_Floats.wrapCircular(d,360);
 	if(d < 60) return m1 + (m2 - m1) * d / 60; else if(d < 180) return m2; else if(d < 240) return m1 + (m2 - m1) * (240 - d) / 60; else return m1;
@@ -5440,8 +5835,10 @@ thx_color__$HSL_HSL_$Impl_$._c = function(d,s,l) {
 var thx_color__$HSLA_HSLA_$Impl_$ = {};
 thx_color__$HSLA_HSLA_$Impl_$.__name__ = true;
 thx_color__$HSLA_HSLA_$Impl_$.create = function(hue,saturation,lightness,alpha) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness,alpha < 0?0:alpha > 1?1:alpha];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.fromFloats = function(arr) {
 	thx_ArrayFloats.resize(arr,4);
@@ -5450,75 +5847,93 @@ thx_color__$HSLA_HSLA_$Impl_$.fromFloats = function(arr) {
 thx_color__$HSLA_HSLA_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "hsl":
-			return thx_color__$HSL_HSL_$Impl_$.toHSLA((function($this) {
-				var $r;
-				var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
-				$r = channels;
-				return $r;
-			}(this)));
+			var tmp1;
+			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
+			tmp1 = channels;
+			tmp = thx_color__$HSL_HSL_$Impl_$.toHSLA(tmp1);
+			break;
 		case "hsla":
 			var channels1 = thx_color_parse_ColorParser.getFloatChannels(info.channels,4);
-			return channels1;
+			tmp = channels1;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$HSLA_HSLA_$Impl_$.analogous = function(this1,spread) {
 	if(spread == null) spread = 30.0;
+	var tmp;
 	var _0 = thx_color__$HSLA_HSLA_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSLA_HSLA_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.complement = function(this1) {
 	return thx_color__$HSLA_HSLA_$Impl_$.rotate(this1,180);
 };
 thx_color__$HSLA_HSLA_$Impl_$.darker = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],0),this1[3]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.lighter = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],thx_Floats.interpolate(t,this1[2],1),this1[3]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.transparent = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Floats.interpolate(t,this1[3],0)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.opaque = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Floats.interpolate(t,this1[3],1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolateAngle(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2]),thx_Floats.interpolate(t,this1[3],other[3])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.rotate = function(this1,angle) {
 	return thx_color__$HSLA_HSLA_$Impl_$.create(this1[0] + angle,this1[1],this1[2],this1[3]);
 };
 thx_color__$HSLA_HSLA_$Impl_$.split = function(this1,spread) {
 	if(spread == null) spread = 150.0;
+	var tmp;
 	var _0 = thx_color__$HSLA_HSLA_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSLA_HSLA_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.withAlpha = function(this1,newalpha) {
 	return [this1[0],this1[1],this1[2],newalpha < 0?0:newalpha > 1?1:newalpha];
 };
 thx_color__$HSLA_HSLA_$Impl_$.withHue = function(this1,newhue) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(newhue,360),this1[1],this1[2],this1[3]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.withLightness = function(this1,newlightness) {
 	return [this1[0],this1[1],newlightness < 0?0:newlightness > 1?1:newlightness,this1[3]];
@@ -5536,8 +5951,10 @@ thx_color__$HSLA_HSLA_$Impl_$.equals = function(this1,other) {
 	return Math.abs(this1[0] - other[0]) <= 10e-10 && Math.abs(this1[1] - other[1]) <= 10e-10 && Math.abs(this1[2] - other[2]) <= 10e-10 && Math.abs(this1[3] - other[3]) <= 10e-10;
 };
 thx_color__$HSLA_HSLA_$Impl_$.toHSL = function(this1) {
+	var tmp;
 	var channels = this1.slice(0,3);
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.toHSVA = function(this1) {
 	return thx_color__$RGBXA_RGBXA_$Impl_$.toHSVA(thx_color__$HSLA_HSLA_$Impl_$.toRGBXA(this1));
@@ -5549,8 +5966,10 @@ thx_color__$HSLA_HSLA_$Impl_$.toRGBA = function(this1) {
 	return thx_color__$RGBXA_RGBXA_$Impl_$.toRGBA(thx_color__$HSLA_HSLA_$Impl_$.toRGBXA(this1));
 };
 thx_color__$HSLA_HSLA_$Impl_$.toRGBXA = function(this1) {
+	var tmp;
 	var channels = [thx_color__$HSLA_HSLA_$Impl_$._c(this1[0] + 120,this1[1],this1[2]),thx_color__$HSLA_HSLA_$Impl_$._c(this1[0],this1[1],this1[2]),thx_color__$HSLA_HSLA_$Impl_$._c(this1[0] - 120,this1[1],this1[2]),this1[3]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSLA_HSLA_$Impl_$.get_hue = function(this1) {
 	return this1[0];
@@ -5565,8 +5984,7 @@ thx_color__$HSLA_HSLA_$Impl_$.get_alpha = function(this1) {
 	return this1[3];
 };
 thx_color__$HSLA_HSLA_$Impl_$._c = function(d,s,l) {
-	var m2;
-	if(l <= 0.5) m2 = l * (1 + s); else m2 = l + s - l * s;
+	var m2 = l <= 0.5?l * (1 + s):l + s - l * s;
 	var m1 = 2 * l - m2;
 	d = thx_Floats.wrapCircular(d,360);
 	if(d < 60) return m1 + (m2 - m1) * d / 60; else if(d < 180) return m2; else if(d < 240) return m1 + (m2 - m1) * (240 - d) / 60; else return m1;
@@ -5574,8 +5992,10 @@ thx_color__$HSLA_HSLA_$Impl_$._c = function(d,s,l) {
 var thx_color__$HSV_HSV_$Impl_$ = {};
 thx_color__$HSV_HSV_$Impl_$.__name__ = true;
 thx_color__$HSV_HSV_$Impl_$.create = function(hue,saturation,lightness) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,lightness < 0?0:lightness > 1?1:lightness];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.fromFloats = function(arr) {
 	thx_ArrayFloats.resize(arr,3);
@@ -5584,69 +6004,86 @@ thx_color__$HSV_HSV_$Impl_$.fromFloats = function(arr) {
 thx_color__$HSV_HSV_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "hsv":
 			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
-			return channels;
+			tmp = channels;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$HSV_HSV_$Impl_$.analogous = function(this1,spread) {
 	if(spread == null) spread = 30.0;
+	var tmp;
 	var _0 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.complement = function(this1) {
 	return thx_color__$HSV_HSV_$Impl_$.rotate(this1,180);
 };
 thx_color__$HSV_HSV_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolateAngle(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.rotate = function(this1,angle) {
 	return thx_color__$HSV_HSV_$Impl_$.withHue(this1,this1[0] + angle);
 };
 thx_color__$HSV_HSV_$Impl_$.split = function(this1,spread) {
 	if(spread == null) spread = 144.0;
+	var tmp;
 	var _0 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.square = function(this1) {
 	return thx_color__$HSV_HSV_$Impl_$.tetrad(this1,90);
 };
 thx_color__$HSV_HSV_$Impl_$.tetrad = function(this1,angle) {
+	var tmp;
 	var _0 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,0);
 	var _1 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,angle);
 	var _2 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,180);
 	var _3 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,180 + angle);
-	return { _0 : _0, _1 : _1, _2 : _2, _3 : _3};
+	tmp = { _0 : _0, _1 : _1, _2 : _2, _3 : _3};
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.triad = function(this1) {
+	var tmp;
 	var _0 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,-120);
 	var _1 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,0);
 	var _2 = thx_color__$HSV_HSV_$Impl_$.rotate(this1,120);
-	return { _0 : _0, _1 : _1, _2 : _2};
+	tmp = { _0 : _0, _1 : _1, _2 : _2};
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.withAlpha = function(this1,alpha) {
+	var tmp;
 	var channels = this1.concat([alpha < 0?0:alpha > 1?1:alpha]);
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.withHue = function(this1,newhue) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(newhue,360),this1[1],this1[2]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSV_HSV_$Impl_$.withValue = function(this1,newvalue) {
 	return [this1[0],this1[1],newvalue < 0?0:newvalue > 1?1:newvalue];
@@ -5757,8 +6194,10 @@ thx_color__$HSV_HSV_$Impl_$.get_value = function(this1) {
 var thx_color__$HSVA_HSVA_$Impl_$ = {};
 thx_color__$HSVA_HSVA_$Impl_$.__name__ = true;
 thx_color__$HSVA_HSVA_$Impl_$.create = function(hue,saturation,value,alpha) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(hue,360),saturation < 0?0:saturation > 1?1:saturation,value < 0?0:value > 1?1:value,alpha < 0?0:alpha > 1?1:alpha];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.fromFloats = function(arr) {
 	thx_ArrayFloats.resize(arr,4);
@@ -5767,67 +6206,81 @@ thx_color__$HSVA_HSVA_$Impl_$.fromFloats = function(arr) {
 thx_color__$HSVA_HSVA_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "hsv":
-			return thx_color__$HSV_HSV_$Impl_$.toHSVA((function($this) {
-				var $r;
-				var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
-				$r = channels;
-				return $r;
-			}(this)));
+			var tmp1;
+			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
+			tmp1 = channels;
+			tmp = thx_color__$HSV_HSV_$Impl_$.toHSVA(tmp1);
+			break;
 		case "hsva":
 			var channels1 = thx_color_parse_ColorParser.getFloatChannels(info.channels,4);
-			return channels1;
+			tmp = channels1;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$HSVA_HSVA_$Impl_$.analogous = function(this1,spread) {
 	if(spread == null) spread = 30.0;
+	var tmp;
 	var _0 = thx_color__$HSVA_HSVA_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSVA_HSVA_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.complement = function(this1) {
 	return thx_color__$HSVA_HSVA_$Impl_$.rotate(this1,180);
 };
 thx_color__$HSVA_HSVA_$Impl_$.transparent = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Floats.interpolate(t,this1[3],0)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.opaque = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Floats.interpolate(t,this1[3],1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolateAngle(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2]),thx_Floats.interpolate(t,this1[3],other[3])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.rotate = function(this1,angle) {
 	return thx_color__$HSVA_HSVA_$Impl_$.create(this1[0] + angle,this1[1],this1[2],this1[3]);
 };
 thx_color__$HSVA_HSVA_$Impl_$.split = function(this1,spread) {
 	if(spread == null) spread = 150.0;
+	var tmp;
 	var _0 = thx_color__$HSVA_HSVA_$Impl_$.rotate(this1,-spread);
 	var _1 = thx_color__$HSVA_HSVA_$Impl_$.rotate(this1,spread);
-	return { _0 : _0, _1 : _1};
+	tmp = { _0 : _0, _1 : _1};
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.withAlpha = function(this1,newalpha) {
 	return [this1[0],this1[1],this1[2],newalpha < 0?0:newalpha > 1?1:newalpha];
 };
 thx_color__$HSVA_HSVA_$Impl_$.withHue = function(this1,newhue) {
+	var tmp;
 	var channels = [thx_Floats.wrapCircular(newhue,360),this1[1],this1[2],this1[3]];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.withLightness = function(this1,newvalue) {
 	return [this1[0],this1[1],newvalue < 0?0:newvalue > 1?1:newvalue,this1[3]];
@@ -5842,8 +6295,10 @@ thx_color__$HSVA_HSVA_$Impl_$.equals = function(this1,other) {
 	return Math.abs(this1[0] - other[0]) <= 10e-10 && Math.abs(this1[1] - other[1]) <= 10e-10 && Math.abs(this1[2] - other[2]) <= 10e-10 && Math.abs(this1[3] - other[3]) <= 10e-10;
 };
 thx_color__$HSVA_HSVA_$Impl_$.toHSV = function(this1) {
+	var tmp;
 	var channels = this1.slice(0,3);
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$HSVA_HSVA_$Impl_$.toHSLA = function(this1) {
 	return thx_color__$RGBXA_RGBXA_$Impl_$.toHSLA(thx_color__$HSVA_HSVA_$Impl_$.toRGBXA(this1));
@@ -5927,19 +6382,22 @@ thx_color__$RGB_RGB_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseHex(color);
 	if(null == info) info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "rgb":
-			return thx_color__$RGB_RGB_$Impl_$.fromInts(thx_color_parse_ColorParser.getInt8Channels(info.channels,3));
+			tmp = thx_color__$RGB_RGB_$Impl_$.fromInts(thx_color_parse_ColorParser.getInt8Channels(info.channels,3));
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$RGB_RGB_$Impl_$.fromInts = function(arr) {
 	thx_ArrayInts.resize(arr,3);
@@ -6049,21 +6507,25 @@ thx_color__$RGBA_RGBA_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseHex(color);
 	if(null == info) info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "rgb":
-			return thx_color__$RGB_RGB_$Impl_$.toRGBA(thx_color__$RGB_RGB_$Impl_$.fromInts(thx_color_parse_ColorParser.getInt8Channels(info.channels,3)));
+			tmp = thx_color__$RGB_RGB_$Impl_$.toRGBA(thx_color__$RGB_RGB_$Impl_$.fromInts(thx_color_parse_ColorParser.getInt8Channels(info.channels,3)));
+			break;
 		case "rgba":
-			return thx_color__$RGBA_RGBA_$Impl_$.create(thx_color_parse_ColorParser.getInt8Channel(info.channels[0]),thx_color_parse_ColorParser.getInt8Channel(info.channels[1]),thx_color_parse_ColorParser.getInt8Channel(info.channels[2]),Math.round(thx_color_parse_ColorParser.getFloatChannel(info.channels[3]) * 255));
+			tmp = thx_color__$RGBA_RGBA_$Impl_$.create(thx_color_parse_ColorParser.getInt8Channel(info.channels[0]),thx_color_parse_ColorParser.getInt8Channel(info.channels[1]),thx_color_parse_ColorParser.getInt8Channel(info.channels[2]),Math.round(thx_color_parse_ColorParser.getFloatChannel(info.channels[3]) * 255));
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$RGBA_RGBA_$Impl_$._new = function(rgba) {
 	return rgba;
@@ -6152,34 +6614,43 @@ thx_color__$RGBX_RGBX_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseHex(color);
 	if(null == info) info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "rgb":
-			return thx_color__$RGBX_RGBX_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3));
+			tmp = thx_color__$RGBX_RGBX_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3));
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$RGBX_RGBX_$Impl_$.darker = function(this1,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],0),thx_Floats.interpolate(t,this1[1],0),thx_Floats.interpolate(t,this1[2],0)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.lighter = function(this1,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],1),thx_Floats.interpolate(t,this1[1],1),thx_Floats.interpolate(t,this1[2],1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.toCSS3 = function(this1) {
 	return thx_color__$RGBX_RGBX_$Impl_$.toString(this1);
@@ -6195,20 +6666,28 @@ thx_color__$RGBX_RGBX_$Impl_$.equals = function(this1,other) {
 	return Math.abs(this1[0] - other[0]) <= 10e-10 && Math.abs(this1[1] - other[1]) <= 10e-10 && Math.abs(this1[2] - other[2]) <= 10e-10;
 };
 thx_color__$RGBX_RGBX_$Impl_$.withAlpha = function(this1,alpha) {
+	var tmp;
 	var channels = this1.concat([alpha < 0?0:alpha > 1?1:alpha]);
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.withRed = function(this1,newred) {
+	var tmp;
 	var channels = [newred < 0?0:newred > 1?1:newred,thx_color__$RGBX_RGBX_$Impl_$.get_green(this1),thx_color__$RGBX_RGBX_$Impl_$.get_blue(this1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.withGreen = function(this1,newgreen) {
+	var tmp;
 	var channels = [thx_color__$RGBX_RGBX_$Impl_$.get_red(this1),newgreen < 0?0:newgreen > 1?1:newgreen,thx_color__$RGBX_RGBX_$Impl_$.get_blue(this1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.withBlue = function(this1,newblue) {
+	var tmp;
 	var channels = [thx_color__$RGBX_RGBX_$Impl_$.get_red(this1),thx_color__$RGBX_RGBX_$Impl_$.get_green(this1),newblue < 0?0:newblue > 1?1:newblue];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.toCIELab = function(this1) {
 	return thx_color__$XYZ_XYZ_$Impl_$.toCIELab(thx_color__$RGBX_RGBX_$Impl_$.toXYZ(this1));
@@ -6239,8 +6718,10 @@ thx_color__$RGBX_RGBX_$Impl_$.toPerceivedGrey = function(this1) {
 	return this1[0] * .299 + this1[1] * .587 + this1[2] * .114;
 };
 thx_color__$RGBX_RGBX_$Impl_$.toPerceivedAccurateGrey = function(this1) {
+	var tmp;
 	var grey = Math.pow(this1[0],2) * .241 + Math.pow(this1[1],2) * .691 + Math.pow(this1[2],2) * .068;
-	return grey;
+	tmp = grey;
+	return tmp;
 };
 thx_color__$RGBX_RGBX_$Impl_$.toHSL = function(this1) {
 	var min = Math.min(Math.min(this1[0],this1[1]),this1[2]);
@@ -6250,7 +6731,7 @@ thx_color__$RGBX_RGBX_$Impl_$.toHSL = function(this1) {
 	var s;
 	var l = (max + min) / 2;
 	if(delta == 0.0) s = h = 0.0; else {
-		if(l < 0.5) s = delta / (max + min); else s = delta / (2 - max - min);
+		s = l < 0.5?delta / (max + min):delta / (2 - max - min);
 		if(this1[0] == max) h = (this1[1] - this1[2]) / delta + (this1[1] < thx_color__$RGBX_RGBX_$Impl_$.get_blue(this1)?6:0); else if(this1[1] == max) h = (this1[2] - this1[0]) / delta + 2; else h = (this1[0] - this1[1]) / delta + 4;
 		h *= 60;
 	}
@@ -6262,16 +6743,15 @@ thx_color__$RGBX_RGBX_$Impl_$.toHSV = function(this1) {
 	var delta = max - min;
 	var h;
 	var s;
-	var v = max;
 	if(delta != 0) s = delta / max; else {
 		s = 0;
 		h = -1;
-		return [h,s,v];
+		return [h,s,max];
 	}
 	if(this1[0] == max) h = (this1[1] - this1[2]) / delta; else if(this1[1] == max) h = 2 + (this1[2] - this1[0]) / delta; else h = 4 + (this1[0] - this1[1]) / delta;
 	h *= 60;
 	if(h < 0) h += 360;
-	return [h,s,v];
+	return [h,s,max];
 };
 thx_color__$RGBX_RGBX_$Impl_$.toRGB = function(this1) {
 	return thx_color__$RGB_RGB_$Impl_$.createf(this1[0],this1[1],this1[2]);
@@ -6326,21 +6806,25 @@ thx_color__$RGBXA_RGBXA_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseHex(color);
 	if(null == info) info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "rgb":
-			return thx_color__$RGBX_RGBX_$Impl_$.toRGBXA(thx_color__$RGBX_RGBX_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3)));
+			tmp = thx_color__$RGBX_RGBX_$Impl_$.toRGBXA(thx_color__$RGBX_RGBX_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,3)));
+			break;
 		case "rgba":
-			return thx_color__$RGBXA_RGBXA_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,4));
+			tmp = thx_color__$RGBXA_RGBXA_$Impl_$.fromFloats(thx_color_parse_ColorParser.getFloatChannels(info.channels,4));
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$._new = function(channels) {
 	return channels;
@@ -6352,32 +6836,46 @@ thx_color__$RGBXA_RGBXA_$Impl_$.lighter = function(this1,t) {
 	return thx_color__$RGBX_RGBX_$Impl_$.withAlpha(thx_color__$RGBX_RGBX_$Impl_$.lighter(thx_color__$RGBXA_RGBXA_$Impl_$.toRGBX(this1),t),thx_color__$RGBXA_RGBXA_$Impl_$.get_alpha(this1));
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.transparent = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Ints.interpolate(t,this1[3],0)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.opaque = function(this1,t) {
+	var tmp;
 	var channels = [this1[0],this1[1],this1[2],thx_Ints.interpolate(t,this1[3],1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Ints.interpolate(t,this1[0],other[0]),thx_Ints.interpolate(t,this1[1],other[1]),thx_Ints.interpolate(t,this1[2],other[2]),thx_Ints.interpolate(t,this1[3],other[3])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.withAlpha = function(this1,newalpha) {
+	var tmp;
 	var channels = [thx_color__$RGBXA_RGBXA_$Impl_$.get_red(this1),thx_color__$RGBXA_RGBXA_$Impl_$.get_green(this1),thx_color__$RGBXA_RGBXA_$Impl_$.get_blue(this1),newalpha < 0?0:newalpha > 1?1:newalpha];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.withRed = function(this1,newred) {
+	var tmp;
 	var channels = [newred < 0?0:newred > 1?1:newred,thx_color__$RGBXA_RGBXA_$Impl_$.get_green(this1),thx_color__$RGBXA_RGBXA_$Impl_$.get_blue(this1),thx_color__$RGBXA_RGBXA_$Impl_$.get_alpha(this1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.withGreen = function(this1,newgreen) {
+	var tmp;
 	var channels = [thx_color__$RGBXA_RGBXA_$Impl_$.get_red(this1),newgreen < 0?0:newgreen > 1?1:newgreen,thx_color__$RGBXA_RGBXA_$Impl_$.get_blue(this1),thx_color__$RGBXA_RGBXA_$Impl_$.get_alpha(this1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.withBlue = function(this1,newblue) {
+	var tmp;
 	var channels = [thx_color__$RGBXA_RGBXA_$Impl_$.get_red(this1),thx_color__$RGBXA_RGBXA_$Impl_$.get_green(this1),newblue < 0?0:newblue > 1?1:newblue,thx_color__$RGBXA_RGBXA_$Impl_$.get_alpha(this1)];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.toCSS3 = function(this1) {
 	return thx_color__$RGBXA_RGBXA_$Impl_$.toString(this1);
@@ -6402,8 +6900,10 @@ thx_color__$RGBXA_RGBXA_$Impl_$.toRGB = function(this1) {
 	return thx_color__$RGBX_RGBX_$Impl_$.toRGB(thx_color__$RGBXA_RGBXA_$Impl_$.toRGBX(this1));
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.toRGBX = function(this1) {
+	var tmp;
 	var channels = this1.slice(0,3);
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$RGBXA_RGBXA_$Impl_$.toRGBA = function(this1) {
 	return thx_color__$RGBA_RGBA_$Impl_$.fromFloats([this1[0],this1[1],this1[2],this1[3]]);
@@ -6444,27 +6944,32 @@ thx_color__$XYZ_XYZ_$Impl_$.fromFloats = function(arr) {
 thx_color__$XYZ_XYZ_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "ciexyz":case "xyz":
 			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
-			return channels;
+			tmp = channels;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$XYZ_XYZ_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$XYZ_XYZ_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$XYZ_XYZ_$Impl_$.withX = function(this1,newx) {
 	return [newx,this1[1],this1[2]];
@@ -6485,10 +6990,9 @@ thx_color__$XYZ_XYZ_$Impl_$.toCIELab = function(this1) {
 	var x = this1[0] * 0.0105211106;
 	var y = this1[1] * 0.01;
 	var z = this1[2] * 0.00918417016;
-	var p;
-	if(x > 0.008856) x = Math.pow(x,0.333333333333333315); else x = 7.787 * x + 0.137931034482758619;
-	if(y > 0.008856) y = Math.pow(y,0.333333333333333315); else y = 7.787 * y + 0.137931034482758619;
-	if(z > 0.008856) z = Math.pow(z,0.333333333333333315); else z = 7.787 * z + 0.137931034482758619;
+	x = x > 0.008856?Math.pow(x,0.333333333333333315):7.787 * x + 0.137931034482758619;
+	y = y > 0.008856?Math.pow(y,0.333333333333333315):7.787 * y + 0.137931034482758619;
+	z = z > 0.008856?Math.pow(z,0.333333333333333315):7.787 * z + 0.137931034482758619;
 	return y > 0.008856?[116 * y - 16,500 * (x - y),200 * (y - z)]:[903.3 * y,500 * (x - y),200 * (y - z)];
 };
 thx_color__$XYZ_XYZ_$Impl_$.toCIELCh = function(this1) {
@@ -6522,9 +7026,9 @@ thx_color__$XYZ_XYZ_$Impl_$.toRGBX = function(this1) {
 	var r = x * 3.2406 + y * -1.5372 + z * -0.4986;
 	var g = x * -0.9689 + y * 1.8758 + z * 0.0415;
 	var b = x * 0.0557 + y * -0.204 + z * 1.0570;
-	if(r > 0.0031308) r = 1.055 * Math.pow(r,0.416666666666666685) - 0.055; else r = 12.92 * r;
-	if(g > 0.0031308) g = 1.055 * Math.pow(g,0.416666666666666685) - 0.055; else g = 12.92 * g;
-	if(b > 0.0031308) b = 1.055 * Math.pow(b,0.416666666666666685) - 0.055; else b = 12.92 * b;
+	r = r > 0.0031308?1.055 * Math.pow(r,0.416666666666666685) - 0.055:12.92 * r;
+	g = g > 0.0031308?1.055 * Math.pow(g,0.416666666666666685) - 0.055:12.92 * g;
+	b = b > 0.0031308?1.055 * Math.pow(b,0.416666666666666685) - 0.055:12.92 * b;
 	return [r,g,b];
 };
 thx_color__$XYZ_XYZ_$Impl_$.toRGBXA = function(this1) {
@@ -6555,27 +7059,32 @@ thx_color__$Yxy_Yxy_$Impl_$.fromFloats = function(arr) {
 thx_color__$Yxy_Yxy_$Impl_$.fromString = function(color) {
 	var info = thx_color_parse_ColorParser.parseColor(color);
 	if(null == info) return null;
+	var tmp;
 	try {
 		var _g = info.name;
 		switch(_g) {
 		case "yxy":
 			var channels = thx_color_parse_ColorParser.getFloatChannels(info.channels,3);
-			return channels;
+			tmp = channels;
+			break;
 		default:
-			return null;
+			tmp = null;
 		}
 	} catch( e ) {
 		haxe_CallStack.lastException = e;
 		if (e instanceof js__$Boot_HaxeError) e = e.val;
-		return null;
+		tmp = null;
 	}
+	return tmp;
 };
 thx_color__$Yxy_Yxy_$Impl_$._new = function(channels) {
 	return channels;
 };
 thx_color__$Yxy_Yxy_$Impl_$.interpolate = function(this1,other,t) {
+	var tmp;
 	var channels = [thx_Floats.interpolate(t,this1[0],other[0]),thx_Floats.interpolate(t,this1[1],other[1]),thx_Floats.interpolate(t,this1[2],other[2])];
-	return channels;
+	tmp = channels;
+	return tmp;
 };
 thx_color__$Yxy_Yxy_$Impl_$.withY1 = function(this1,newy1) {
 	return [newy1,this1[1],this1[2]];
@@ -6654,11 +7163,12 @@ thx_color_parse_ColorParser.parseChannel = function(s) {
 thx_color_parse_ColorParser.getFloatChannels = function(channels,length,useInt8) {
 	if(useInt8 == null) useInt8 = true;
 	if(length != channels.length) throw new js__$Boot_HaxeError("invalid number of channels, expected " + length + " but it is " + channels.length);
-	return channels.map((function(f,a2) {
-		return function(a1) {
-			return f(a1,a2);
-		};
-	})(thx_color_parse_ColorParser.getFloatChannel,useInt8));
+	var tmp;
+	var a2 = useInt8;
+	tmp = function(a1) {
+		return thx_color_parse_ColorParser.getFloatChannel(a1,a2);
+	};
+	return channels.map(tmp);
 };
 thx_color_parse_ColorParser.getInt8Channels = function(channels,length) {
 	if(length != channels.length) throw new js__$Boot_HaxeError("invalid number of channels, expected " + length + " but it is " + channels.length);
@@ -6666,47 +7176,45 @@ thx_color_parse_ColorParser.getInt8Channels = function(channels,length) {
 };
 thx_color_parse_ColorParser.getFloatChannel = function(channel,useInt8) {
 	if(useInt8 == null) useInt8 = true;
+	var tmp;
 	switch(channel[1]) {
 	case 5:
-		var v = channel[2];
-		if(v) return 1; else return 0;
+		if(channel[2]) tmp = 1; else tmp = 0;
 		break;
 	case 1:
-		var v1 = channel[2];
-		return v1;
+		tmp = channel[2];
+		break;
 	case 4:
-		var v2 = channel[2];
-		return v2;
+		tmp = channel[2];
+		break;
 	case 2:
-		var v3 = channel[2];
-		return v3;
+		tmp = channel[2];
+		break;
 	case 3:
-		var v4 = channel[2];
-		if(useInt8) return v4 / 255; else {
-			var v5 = channel[2];
-			return v5;
-		}
+		if(useInt8) tmp = channel[2] / 255; else tmp = channel[2];
 		break;
 	case 0:
-		var v6 = channel[2];
-		return v6 / 100;
+		tmp = channel[2] / 100;
+		break;
 	}
+	return tmp;
 };
 thx_color_parse_ColorParser.getInt8Channel = function(channel) {
+	var tmp;
 	switch(channel[1]) {
 	case 5:
-		var v = channel[2];
-		if(v) return 1; else return 0;
+		if(channel[2]) tmp = 1; else tmp = 0;
 		break;
 	case 3:
-		var v1 = channel[2];
-		return v1;
+		tmp = channel[2];
+		break;
 	case 0:
-		var v2 = channel[2];
-		return Math.round(255 * v2 / 100);
+		tmp = Math.round(255 * channel[2] / 100);
+		break;
 	default:
 		throw new js__$Boot_HaxeError("unable to extract a valid int8 value");
 	}
+	return tmp;
 };
 thx_color_parse_ColorParser.prototype = {
 	processHex: function(s) {
@@ -6728,8 +7236,7 @@ thx_color_parse_ColorParser.prototype = {
 		if(null == name) return null;
 		name = name.toLowerCase();
 		var m2 = this.pattern_color.matched(2);
-		var s_channels;
-		if(null == m2) s_channels = []; else s_channels = m2.split(",");
+		var s_channels = null == m2?[]:m2.split(",");
 		var channels = [];
 		var channel;
 		var _g = 0;
@@ -6747,37 +7254,39 @@ thx_color_parse_ColorParser.prototype = {
 		var value = this.pattern_channel.matched(1);
 		var unit = this.pattern_channel.matched(2);
 		if(unit == null) unit = "";
+		var tmp;
 		try {
 			switch(unit) {
 			case "%":
-				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIPercent(thx_Floats.parse(value)); else return null;
+				if(thx_Floats.canParse(value)) tmp = thx_color_parse_ChannelInfo.CIPercent(thx_Floats.parse(value)); else tmp = null;
 				break;
 			case "deg":
-				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value)); else return null;
+				if(thx_Floats.canParse(value)) tmp = thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value)); else tmp = null;
 				break;
 			case "DEG":
-				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value)); else return null;
+				if(thx_Floats.canParse(value)) tmp = thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value)); else tmp = null;
 				break;
 			case "rad":
-				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value) * 180 / Math.PI); else return null;
+				if(thx_Floats.canParse(value)) tmp = thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value) * 180 / Math.PI); else tmp = null;
 				break;
 			case "RAD":
-				if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value) * 180 / Math.PI); else return null;
+				if(thx_Floats.canParse(value)) tmp = thx_color_parse_ChannelInfo.CIDegree(thx_Floats.parse(value) * 180 / Math.PI); else tmp = null;
 				break;
 			case "":
 				if(thx_Ints.canParse(value)) {
 					var i = thx_Ints.parse(value);
-					if(i == 0) return thx_color_parse_ChannelInfo.CIBool(false); else if(i == 1) return thx_color_parse_ChannelInfo.CIBool(true); else if(i < 256) return thx_color_parse_ChannelInfo.CIInt8(i); else return thx_color_parse_ChannelInfo.CIInt(i);
-				} else if(thx_Floats.canParse(value)) return thx_color_parse_ChannelInfo.CIFloat(thx_Floats.parse(value)); else return null;
+					if(i == 0) tmp = thx_color_parse_ChannelInfo.CIBool(false); else if(i == 1) tmp = thx_color_parse_ChannelInfo.CIBool(true); else if(i < 256) tmp = thx_color_parse_ChannelInfo.CIInt8(i); else tmp = thx_color_parse_ChannelInfo.CIInt(i);
+				} else if(thx_Floats.canParse(value)) tmp = thx_color_parse_ChannelInfo.CIFloat(thx_Floats.parse(value)); else tmp = null;
 				break;
 			default:
-				return null;
+				tmp = null;
 			}
 		} catch( e ) {
 			haxe_CallStack.lastException = e;
 			if (e instanceof js__$Boot_HaxeError) e = e.val;
 			return null;
 		}
+		return tmp;
 	}
 	,__class__: thx_color_parse_ColorParser
 };
@@ -6826,19 +7335,37 @@ var util_CharacterController = function(input,body) {
 util_CharacterController.__name__ = true;
 util_CharacterController.prototype = {
 	update: function() {
-		this.controlForce.setTo(.0,.0);
-		var left = this.input.PressedDuration(65);
-		var right = this.input.PressedDuration(68);
-		var up = this.input.JustPressed(87);
-		var upDuration = this.input.PressedDuration(87);
-		var down = this.input.PressedDuration(83);
+		var _this = this.controlForce;
+		_this.x = .0;
+		_this.y = .0;
+		var tmp;
+		var _this1 = this.input;
+		var duration = _this1.keyMap[65];
+		if(duration > 0) tmp = _this1.frameRef - duration; else tmp = -1;
+		var left = tmp;
+		var tmp1;
+		var _this2 = this.input;
+		var duration1 = _this2.keyMap[68];
+		if(duration1 > 0) tmp1 = _this2.frameRef - duration1; else tmp1 = -1;
+		var right = tmp1;
+		var tmp2;
+		var _this3 = this.input;
+		tmp2 = _this3.keyMap[87] == _this3.frameRef - 1;
+		var up = tmp2;
+		var tmp3;
+		var _this4 = this.input;
+		var duration2 = _this4.keyMap[87];
+		if(duration2 > 0) tmp3 = _this4.frameRef - duration2; else tmp3 = -1;
+		var upDuration = tmp3;
+		var _this5 = this.input;
+		var duration3 = _this5.keyMap[83];
+		if(duration3 > 0) _this5.frameRef - duration3; else -1;
 		if(!this.jumping && this.body.onGround && up) {
 			this.jumping = true;
 			this.controlForce.y -= 200.;
 		}
 		if(this.jumping && this.input.keyMap[87] == 0 || this.body.lastNormal.y > 0) this.jumping = false;
-		if(this.body.onGround && !this.body.onGroundPrev) {
-		}
+		this.body.onGround && !this.body.onGroundPrev;
 		if(this.body.onGround) {
 			if(left > 0) this.controlForce.x -= 20;
 			if(right > 0) this.controlForce.x += 20;
@@ -6846,8 +7373,7 @@ util_CharacterController.prototype = {
 		} else {
 			if(left > 0) this.controlForce.x -= 10;
 			if(right > 0) this.controlForce.x += 10;
-			var d = 10;
-			if(this.jumping && upDuration > 1 && upDuration < d) this.controlForce.y -= 800 / d;
+			if(this.jumping && upDuration > 1 && upDuration < 10) this.controlForce.y -= 80.;
 		}
 		this.body.addForce(this.controlForce);
 	}
@@ -6912,7 +7438,7 @@ util_DigitalInput.prototype = {
 	}
 	,PressedDuration: function(keyCode) {
 		var duration = this.keyMap[keyCode];
-		if(duration > 0) return this.frameRef - duration; else return -1;
+		return duration > 0?this.frameRef - duration:-1;
 	}
 	,Released: function(keyCode) {
 		return this.keyMap[keyCode] == 0;
@@ -6925,7 +7451,7 @@ var util_GameLoop = function() {
 util_GameLoop.__name__ = true;
 util_GameLoop.prototype = {
 	update: function(timestamp) {
-		if(this.prevAnimationTime == 0) this.delta = 16.6666666766666687; else this.delta = timestamp - this.prevAnimationTime;
+		this.delta = this.prevAnimationTime == 0?16.6666666766666687:timestamp - this.prevAnimationTime;
 		this.prevAnimationTime = timestamp;
 		if(this.updateFunc != null) this.updateFunc(Math.max(this.delta,16.6666666766666687),Math.floor(timestamp));
 		this.rafID = window.requestAnimationFrame($bind(this,this.update));
@@ -7050,10 +7576,14 @@ if(typeof(scope.performance) == "undefined") scope.performance = { };
 if(typeof(scope.performance.now) == "undefined") {
 	var nowOffset = new Date().getTime();
 	if(scope.performance.timing && scope.performance.timing.navigationStart) nowOffset = scope.performance.timing.navigationStart;
-	var now = function() {
-		return new Date() - nowOffset;
-	};
-	scope.performance.now = now;
+	scope.performance.now = (function($this) {
+		var $r;
+		var now = function() {
+			return new Date() - nowOffset;
+		};
+		$r = now;
+		return $r;
+	}(this));
 }
 Demo.mapData = "eJxjZGBgYKQyphaglXnUMpMe/iXGfHrHB7XDj1pmkut/XGqonQeGSv4YTOZRMz5xmT3SzKMmBgBlKwBx";
 glaze_geom_Vector2.ZERO_TOLERANCE = 1e-08;
@@ -7107,5 +7637,3 @@ util_CharacterController.MAX_AIR_HORIZONTAL_VELOCITY = 500;
 util_GameLoop.MIN_DELTA = 16.6666666766666687;
 Demo.main();
 })(typeof console != "undefined" ? console : {log:function(){}});
-
-//# sourceMappingURL=script.js.map

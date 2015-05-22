@@ -106,8 +106,9 @@ class Body
         var seperation = Math.max(contact.distance,0);
         var penetration = Math.min(contact.distance,0);
         
-        positionCorrection.x -= contact.normal.x * (penetration/dt);
-        positionCorrection.y -= contact.normal.y * (penetration/dt);
+        //positionCorrection.x -= contact.normal.x * (penetration/dt);
+        //positionCorrection.y -= contact.normal.y * (penetration/dt);
+        positionCorrection.minusMultEquals(contact.normal,penetration/dt);
 
         var nv = velocity.dot(contact.normal) + (seperation/dt);
 
@@ -115,8 +116,9 @@ class Body
             stepContactCount++;
 
             //Cancel normal vel
-            velocity.x -= contact.normal.x * nv;
-            velocity.y -= contact.normal.y * nv;
+            // velocity.x -= contact.normal.x * nv;
+            // velocity.y -= contact.normal.y * nv;
+            velocity.minusMultEquals(contact.normal,nv);
 
             //Item doesnt bounce? Surface is updwards?
             if (!canBounce && contact.normal.y < 0) {
