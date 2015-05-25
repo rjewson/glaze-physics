@@ -13,8 +13,8 @@ import glaze.Engine;
 import glaze.geom.Vector2;
 import glaze.physics.Body;
 import minicanvas.MiniCanvas;
-import util.GameLoop;
-import util.DigitalInput;
+import glaze.core.GameLoop;
+import glaze.core.DigitalInput;
 
 class Demo 
 {

@@ -9,5 +9,6 @@
   "version": "0.1.0",
   "contributors": ["rjewson"],
   "dependencies": {
+    "glaze-core":""
   }
 }

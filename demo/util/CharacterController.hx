@@ -1,6 +1,7 @@
 
 package util;
 
+import glaze.core.DigitalInput;
 import glaze.geom.Vector2;
 import glaze.physics.Body;
 
