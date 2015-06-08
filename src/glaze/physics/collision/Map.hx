@@ -11,6 +11,9 @@ import glaze.physics.collision.Ray;
 class Map 
 {
 
+    public static inline var COLLIDABLE:Int = 0x1 << 0;
+    public static inline var ONE_WAY:Int    = 0x1 << 1;
+
     public static inline var CORRECTION:Float = .0;
     public static inline var ROUNDDOWN:Float = .01;
     public static inline var ROUNDUP:Float = .5;
@@ -49,7 +52,7 @@ class Map
         for (x in startX...endX) {
             for (y in startY...endY) {
                 var cell = data.get(x,y,0);
-                if (cell>0) {
+                if (cell&COLLIDABLE==1) {
                     tilePosition.x = (x*tileSize)+tileHalfSize;
                     tilePosition.y = (y*tileSize)+tileHalfSize;
                     if (body.isBullet) {
@@ -73,54 +76,6 @@ class Map
                     }
                 }
             }
-        }
-    }
-
-    public function AABBvsStaticTileAABBSlope(aabb_position_A:Vector2,aabb_extents_A:Vector2,aabb_position_B:Vector2,aabb_extents_B:Vector2,contact:Contact):Bool {
-    
-        var slope = new Vector2(1/1.4142135623730951,-1/1.4142135623730951);
-
-        var dx = aabb_position_B.x - aabb_position_A.x;
-        var px = (aabb_extents_B.x + aabb_extents_A.x) - Math.abs(dx);
-
-        var dy = aabb_position_B.y - aabb_position_A.y;
-        var py = (aabb_extents_B.y + aabb_extents_A.y) - Math.abs(dy);
-
-        if (px<py) {
-            //right-left
-            contact.normal.x = dx<0 ? 1 : -1;
-            contact.normal.y = 0;
-        } else {
-            //down-up
-            contact.normal.x = 0;
-            contact.normal.y = dy<0 ? 1 : -1;
-        }
-        
-
-        //if (aabb_position_A.y+aabb_extents_A.y<aabb_position_B.y+aabb_extents_B.y && aabb_position_A.x-aabb_extents_B.x > aabb_position_B.x-aabb_extents_B.x) {
-
-         if(px>=0&&py>=0) {
-            trace('a');
-            contact.normal.x =  1/1.4142135623730951;
-            contact.normal.y = -1/1.4142135623730951;
-            var cornerTile = new Vector2(aabb_position_B.x-aabb_extents_B.x, aabb_position_B.y-aabb_extents_B.y );
-            var d = contact.normal.dot(cornerTile);
-            var cornerBody = new Vector2(aabb_position_A.x-aabb_extents_A.x, aabb_position_A.y+aabb_extents_A.y );
-            
-            contact.distance = (contact.normal.dot(cornerBody) - d)/contact.normal.dot(contact.normal);
-            //trace(dist);
-            return true;
-        } else {
-            trace('b');
-            var pcx = ((contact.normal.x * (aabb_extents_A.x+aabb_extents_B.x) ) + aabb_position_B.x);
-            var pcy = (contact.normal.y * (aabb_extents_A.y+aabb_extents_B.y) ) + aabb_position_B.y;
-
-            var pdx = aabb_position_A.x - pcx;
-            var pdy = aabb_position_A.y - pcy;
-
-            contact.distance = pdx*contact.normal.x + pdy*contact.normal.y;
-
-            return true;
         }
     }
 

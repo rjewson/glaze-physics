@@ -1,4 +1,4 @@
-package ;
+package demo;
 
 import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.Filter;
@@ -9,7 +9,7 @@ import glaze.physics.collision.Ray;
 import glaze.physics.Material;
 import util.CharacterController;
 import js.Browser;
-import glaze.Engine;
+import glaze.physics.PhysicsEngine;
 import glaze.geom.Vector2;
 import glaze.physics.Body;
 import minicanvas.MiniCanvas;
@@ -25,7 +25,7 @@ class Demo
     public var loop:GameLoop;
     public var canvas:MiniCanvas;
     public var input:DigitalInput;
-    public var engine:Engine;
+    public var engine:PhysicsEngine;
 
     public var player:Body;
     public var ray:Ray;
@@ -79,7 +79,7 @@ class Demo
         map.debug = debugGrid;
         debugGridItems = new Array<Int>();
 
-        engine = new Engine(60,new glaze.physics.collision.broadphase.BruteforceBroadphase(map,new Intersect()));
+        engine = new PhysicsEngine(60,new glaze.physics.collision.broadphase.BruteforceBroadphase(map,new Intersect()));
 
         loop = new GameLoop();
         loop.updateFunc = update;
@@ -274,7 +274,7 @@ class Demo
     }
 
     public static function main() {
-        var demo = new Demo();
+        var demo = new demo.Demo();
         Browser.document.getElementById("stopbutton").addEventListener("click",function(event){
             demo.loop.stop();
         });

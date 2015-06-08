@@ -3,7 +3,7 @@
 -cp src
 -lib minicanvas
 -lib glaze-core
--main Demo
+-main demo.Demo
 #-debug
 #-D analyzer
 -cmd osascript bin/refreshTab

@@ -1,13 +1,11 @@
-
-
-package glaze;
+package glaze.physics;
 
 import glaze.geom.Vector2;
 import glaze.physics.collision.BFProxy;
 import glaze.physics.collision.broadphase.IBroadphase;
 import glaze.physics.Body;
 
-class Engine 
+class PhysicsEngine 
 {
 
     public var dynamicBodies:Array<Body>;
