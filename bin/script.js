@@ -1,4 +1,5 @@
 (function (console) { "use strict";
+var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -693,6 +694,13 @@ glaze_geom_Vector2.prototype = {
 		this.x -= 2 * d * normal.x;
 		this.y -= 2 * d * normal.y;
 	}
+	,interpolate: function(v1,v2,t) {
+		this.x = v1.x;
+		this.y = v1.y;
+		this.multEquals(1 - t);
+		this.x += v2.x * t;
+		this.y += v2.y * t;
+	}
 	,__class__: glaze_geom_Vector2
 };
 var glaze_physics_Body = function(w,h,material,filter) {
@@ -1371,11 +1379,12 @@ glaze_physics_collision_broadphase_BruteforceBroadphase.prototype = {
 };
 var haxe_StackItem = { __ename__ : true, __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
 haxe_StackItem.CFunction = ["CFunction",0];
+haxe_StackItem.CFunction.toString = $estr;
 haxe_StackItem.CFunction.__enum__ = haxe_StackItem;
-haxe_StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe_StackItem; return $x; };
-haxe_StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe_StackItem; return $x; };
-haxe_StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe_StackItem; return $x; };
-haxe_StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe_StackItem; return $x; };
+haxe_StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
+haxe_StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
+haxe_StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
+haxe_StackItem.LocalFunction = function(v) { var $x = ["LocalFunction",4,v]; $x.__enum__ = haxe_StackItem; $x.toString = $estr; return $x; };
 var haxe_CallStack = function() { };
 haxe_CallStack.__name__ = true;
 haxe_CallStack.getStack = function(e) {
@@ -1801,12 +1810,15 @@ haxe_io_Eof.prototype = {
 };
 var haxe_io_Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] };
 haxe_io_Error.Blocked = ["Blocked",0];
+haxe_io_Error.Blocked.toString = $estr;
 haxe_io_Error.Blocked.__enum__ = haxe_io_Error;
 haxe_io_Error.Overflow = ["Overflow",1];
+haxe_io_Error.Overflow.toString = $estr;
 haxe_io_Error.Overflow.__enum__ = haxe_io_Error;
 haxe_io_Error.OutsideBounds = ["OutsideBounds",2];
+haxe_io_Error.OutsideBounds.toString = $estr;
 haxe_io_Error.OutsideBounds.__enum__ = haxe_io_Error;
-haxe_io_Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe_io_Error; return $x; };
+haxe_io_Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe_io_Error; $x.toString = $estr; return $x; };
 var haxe_io_FPHelper = function() { };
 haxe_io_FPHelper.__name__ = true;
 haxe_io_FPHelper.i32ToFloat = function(i) {
@@ -1852,9 +1864,9 @@ haxe_io_FPHelper.doubleToI64 = function(v) {
 	return i64;
 };
 var haxe_zip_Huffman = { __ename__ : true, __constructs__ : ["Found","NeedBit","NeedBits"] };
-haxe_zip_Huffman.Found = function(i) { var $x = ["Found",0,i]; $x.__enum__ = haxe_zip_Huffman; return $x; };
-haxe_zip_Huffman.NeedBit = function(left,right) { var $x = ["NeedBit",1,left,right]; $x.__enum__ = haxe_zip_Huffman; return $x; };
-haxe_zip_Huffman.NeedBits = function(n,table) { var $x = ["NeedBits",2,n,table]; $x.__enum__ = haxe_zip_Huffman; return $x; };
+haxe_zip_Huffman.Found = function(i) { var $x = ["Found",0,i]; $x.__enum__ = haxe_zip_Huffman; $x.toString = $estr; return $x; };
+haxe_zip_Huffman.NeedBit = function(left,right) { var $x = ["NeedBit",1,left,right]; $x.__enum__ = haxe_zip_Huffman; $x.toString = $estr; return $x; };
+haxe_zip_Huffman.NeedBits = function(n,table) { var $x = ["NeedBits",2,n,table]; $x.__enum__ = haxe_zip_Huffman; $x.toString = $estr; return $x; };
 var haxe_zip_HuffTools = function() {
 };
 haxe_zip_HuffTools.__name__ = true;
@@ -1995,20 +2007,28 @@ haxe_zip__$InflateImpl_Window.prototype = {
 };
 var haxe_zip__$InflateImpl_State = { __ename__ : true, __constructs__ : ["Head","Block","CData","Flat","Crc","Dist","DistOne","Done"] };
 haxe_zip__$InflateImpl_State.Head = ["Head",0];
+haxe_zip__$InflateImpl_State.Head.toString = $estr;
 haxe_zip__$InflateImpl_State.Head.__enum__ = haxe_zip__$InflateImpl_State;
 haxe_zip__$InflateImpl_State.Block = ["Block",1];
+haxe_zip__$InflateImpl_State.Block.toString = $estr;
 haxe_zip__$InflateImpl_State.Block.__enum__ = haxe_zip__$InflateImpl_State;
 haxe_zip__$InflateImpl_State.CData = ["CData",2];
+haxe_zip__$InflateImpl_State.CData.toString = $estr;
 haxe_zip__$InflateImpl_State.CData.__enum__ = haxe_zip__$InflateImpl_State;
 haxe_zip__$InflateImpl_State.Flat = ["Flat",3];
+haxe_zip__$InflateImpl_State.Flat.toString = $estr;
 haxe_zip__$InflateImpl_State.Flat.__enum__ = haxe_zip__$InflateImpl_State;
 haxe_zip__$InflateImpl_State.Crc = ["Crc",4];
+haxe_zip__$InflateImpl_State.Crc.toString = $estr;
 haxe_zip__$InflateImpl_State.Crc.__enum__ = haxe_zip__$InflateImpl_State;
 haxe_zip__$InflateImpl_State.Dist = ["Dist",5];
+haxe_zip__$InflateImpl_State.Dist.toString = $estr;
 haxe_zip__$InflateImpl_State.Dist.__enum__ = haxe_zip__$InflateImpl_State;
 haxe_zip__$InflateImpl_State.DistOne = ["DistOne",6];
+haxe_zip__$InflateImpl_State.DistOne.toString = $estr;
 haxe_zip__$InflateImpl_State.DistOne.__enum__ = haxe_zip__$InflateImpl_State;
 haxe_zip__$InflateImpl_State.Done = ["Done",7];
+haxe_zip__$InflateImpl_State.Done.toString = $estr;
 haxe_zip__$InflateImpl_State.Done.__enum__ = haxe_zip__$InflateImpl_State;
 var haxe_zip_InflateImpl = function(i,header,crc) {
 	if(crc == null) crc = true;
@@ -3146,10 +3166,12 @@ minicanvas_MiniCanvas.prototype = {
 };
 var minicanvas_ScaleMode = { __ename__ : true, __constructs__ : ["NoScale","Auto","Scaled"] };
 minicanvas_ScaleMode.NoScale = ["NoScale",0];
+minicanvas_ScaleMode.NoScale.toString = $estr;
 minicanvas_ScaleMode.NoScale.__enum__ = minicanvas_ScaleMode;
 minicanvas_ScaleMode.Auto = ["Auto",1];
+minicanvas_ScaleMode.Auto.toString = $estr;
 minicanvas_ScaleMode.Auto.__enum__ = minicanvas_ScaleMode;
-minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; return $x; };
+minicanvas_ScaleMode.Scaled = function(v) { var $x = ["Scaled",2,v]; $x.__enum__ = minicanvas_ScaleMode; $x.toString = $estr; return $x; };
 var minicanvas_BrowserCanvas = function(width,height,scaleMode) {
 	this.isNode = false;
 	this.isBrowser = true;
@@ -4308,6 +4330,7 @@ thx_Ints.wrapCircular = function(v,max) {
 };
 var thx_Nil = { __ename__ : true, __constructs__ : ["nil"] };
 thx_Nil.nil = ["nil",0];
+thx_Nil.nil.toString = $estr;
 thx_Nil.nil.__enum__ = thx_Nil;
 var thx_Nulls = function() { };
 thx_Nulls.__name__ = true;
@@ -6897,12 +6920,12 @@ thx_color_parse_ColorInfo.prototype = {
 	,__class__: thx_color_parse_ColorInfo
 };
 var thx_color_parse_ChannelInfo = { __ename__ : true, __constructs__ : ["CIPercent","CIFloat","CIDegree","CIInt8","CIInt","CIBool"] };
-thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
-thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; return $x; };
+thx_color_parse_ChannelInfo.CIPercent = function(value) { var $x = ["CIPercent",0,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIFloat = function(value) { var $x = ["CIFloat",1,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIDegree = function(value) { var $x = ["CIDegree",2,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt8 = function(value) { var $x = ["CIInt8",3,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIInt = function(value) { var $x = ["CIInt",4,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
+thx_color_parse_ChannelInfo.CIBool = function(value) { var $x = ["CIBool",5,value]; $x.__enum__ = thx_color_parse_ChannelInfo; $x.toString = $estr; return $x; };
 var thx_error_ErrorWrapper = function(message,innerError,stack,pos) {
 	thx_Error.call(this,message,stack,pos);
 	this.innerError = innerError;
